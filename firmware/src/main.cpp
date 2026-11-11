@@ -27,6 +27,7 @@
 #include <BLEScan.h>
 #include "pk_common.h"
 #include "pk_qs.h"
+#include "pk_sense.h"
 
 #ifdef ROLE_NODE
 #include <WiFi.h>
@@ -106,6 +107,33 @@ static float rho = 0;
 static uint8_t state = 0;
 static uint32_t lastFeedMs = 0;
 static int bleDevicesSeen = 0;
+
+// ---- PS-01 density estimator (include/pk_sense.h; checked against sim/sensing.py by
+// sim/test_sense_port.py) ----
+// Raw sensor input: line-counter crossings and density readings. In the demo they arrive over
+// serial ("SENSE ...") or relayed by the gateway (CountMsg 'N'); real drivers (VL53L1X pair at a
+// gate, camera density over UART on a road) add to the same accumulators. Once raw input has been
+// seen, the node's density is the estimator's output instead of a ready-made RHO value.
+#ifndef PATCH_AREA_M2
+#define PATCH_AREA_M2 300.0f      // patch area (m^2), set per node at installation
+#endif
+#ifndef HAS_COUNTERS
+#define HAS_COUNTERS 1            // every boundary of the patch has a line counter (gates, exits)
+#endif
+#ifndef HAS_READING
+#define HAS_READING 1             // the patch has a density reading (camera / CCTV / RF)
+#endif
+static pksense::SenseParams senseP;
+static pksense::DensityEstimator est;
+static bool useEst = false;
+static float accIn = 0, accOut = 0, zVal = 0;
+static bool zDue = false;
+static void senseInput(float cin, float cout, float z) {   // caller holds mux
+  accIn += cin; accOut += cout;
+  if (z >= 0) { zVal = z; zDue = true; }
+  useEst = true;
+  lastFeedMs = millis();
+}
 
 // ---- PS-03 buffers ----
 static const uint32_t SIGHT_KEEP_S = 3600;     // tag sightings kept 60 min, then expire
@@ -204,6 +232,12 @@ static void onRecv(const uint8_t* mac, const uint8_t* data, int len) {
         if (m.node == NODE_ID) { rho = m.rho; lastFeedMs = millis(); }
       }
       break;
+    case 'N':
+      if (len == sizeof(CountMsg)) {
+        CountMsg m; memcpy(&m, data, sizeof(m));
+        if (m.node == NODE_ID) senseInput(m.cin, m.cout, m.z);
+      }
+      break;
     case 'S':
       if (len == sizeof(SightingMsg) && nQSight < 8) memcpy(&qSight[nQSight++], data, sizeof(SightingMsg));
       break;
@@ -300,6 +334,8 @@ static void answerSearch() {
 
 static void readSerial() {
   // RHO <v> | RHO <node> <v>        simulated sensor feed (hardware-in-the-loop)
+  // SENSE <in> <out> <z> | SENSE <node> <in> <out> <z>   raw counts + density reading (z < 0: none)
+  //                                  for the on-node estimator (pk_sense.h)
   // FIND <hex16> [<hex16> ...]       last-seen search for a case's tag IDs
   // LOSTCMD <hex16> / CLEARCMD <hex16>   desk command to a tag
   // CLEARDOWN <node> | CLEARDOWN ALL operator checked a silent node: end the fail-safe hold
@@ -322,6 +358,24 @@ static void readSerial() {
         float v = rest.substring(sp + 1).toFloat();
         if (node == NODE_ID) { rho = v; lastFeedMs = millis(); }
         else { RhoMsg m = {'R', (uint8_t)node, v}; esp_now_send(BCAST, (uint8_t*)&m, sizeof(m)); }
+      }
+    } else if (line.startsWith("SENSE ")) {
+      float v[4];
+      int k = 0;
+      String rest = line.substring(6) + " ";
+      while (k < 4 && rest.length() > 0) {
+        int sp = rest.indexOf(' ');
+        if (sp > 0) v[k++] = rest.substring(0, sp).toFloat();
+        rest = rest.substring(sp + 1);
+      }
+      if (k == 3 || (k == 4 && (int)v[0] == NODE_ID)) {
+        float* x = k == 4 ? v + 1 : v;
+        portENTER_CRITICAL(&mux);
+        senseInput(x[0], x[1], x[2]);
+        portEXIT_CRITICAL(&mux);
+      } else if (k == 4) {
+        CountMsg m = {'N', (uint8_t)v[0], v[1], v[2], v[3]};
+        esp_now_send(BCAST, (uint8_t*)&m, sizeof(m));
       }
     } else if (line.startsWith("FIND ")) {
       static uint8_t ids[64][8];
@@ -347,7 +401,12 @@ static void readSerial() {
 }
 
 static void qsStep() {
-  portENTER_CRITICAL(&mux);              // onRecv writes the successor table
+  portENTER_CRITICAL(&mux);              // onRecv writes the successor table and the sensor inputs
+  if (useEst) {                          // one estimator step per loop tick (~1 s)
+    rho = est.step(accIn, accOut, zDue, zVal, senseP);
+    accIn = accOut = 0;
+    zDue = false;
+  }
   pkqs::RouteMsg m = qs.step(rho, millis());
   portEXIT_CRITICAL(&mux);
   state = qs.state;
@@ -450,6 +509,7 @@ void setup() {
   scan->setInterval(100);
   scan->setWindow(90);
   configureRoute();
+  est.init(PATCH_AREA_M2, HAS_COUNTERS != 0, HAS_READING != 0, senseP);
   Serial.printf("{\"type\":\"boot\",\"node\":%d}\n", NODE_ID);
 }
 

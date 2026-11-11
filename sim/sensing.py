@@ -57,6 +57,39 @@ class SensingConfig:
         return asdict(self)
 
 
+def kf_step(state, cin, cout, area, counted, due, z, blind, cfg):
+    """One second of the per-node estimator, vectorised over nodes. This is the reference
+    for the firmware port (firmware/include/pk_sense.h, checked by test_sense_port.py).
+    state = (rho, b, P00, P01, P11); cin/cout: counted crossings this second; due: a density
+    reading z arrived; counted: the node's boundaries are all counted; blind: no sensor at all."""
+    rho, b, P00, P01, P11 = state
+    k = counted
+    a = area
+    # ---- predict
+    q_rho = (cfg.count_noise ** 2 * (cin + cout) + 1e-6) / a ** 2
+    rho = np.where(k, rho + (cin - cout) / a - b, rho)
+    P00n = np.where(k, P00 - 2 * P01 + P11 + q_rho, P00 + cfg.rw_sd ** 2)
+    P01n = np.where(k, P01 - P11, 0.0)
+    P11n = np.where(k, P11 + cfg.b_walk_sd ** 2, P11)
+    P00, P01, P11 = P00n, P01n, P11n
+    # ---- correct, where a density reading arrived
+    if np.any(due):
+        R = (cfg.obs_rel_sd * np.maximum(z, 0.5)) ** 2 + cfg.obs_abs_sd ** 2
+        S = P00 + R
+        K0, K1 = P00 / S, P01 / S
+        y = z - rho
+        rho = np.where(due, rho + K0 * y, rho)
+        b = np.where(due & k, b + K1 * y, b)
+        nP00 = (1 - K0) * P00
+        nP01 = (1 - K0) * P01
+        nP11 = P11 - K1 * P01
+        P00 = np.where(due, nP00, P00)
+        P01 = np.where(due, nP01, P01)
+        P11 = np.where(due, nP11, P11)
+    rho = np.where(blind, 0.0, np.maximum(rho, 0.0))
+    return rho, b, P00, P01, P11
+
+
 class Sensing:
     def __init__(self, graph, cfg: SensingConfig, seed: int):
         self.cfg = cfg
@@ -143,35 +176,17 @@ class Sensing:
         ce = self._count(edge_flow, self.beta_e, self.c_edge)
         cin = np.bincount(self.v, weights=ce, minlength=n) + self._count(arrivals, self.beta_src, self.c_src)
         cout = np.bincount(self.u, weights=ce, minlength=n) + self._count(exit_out, self.beta_exit, self.c_exit)
-        k = self.counted
-        a = self.area
-        q_rho = (cfg.count_noise ** 2 * (cin + cout) + 1e-6) / a ** 2
-        self.rho = np.where(k, self.rho + (cin - cout) / a - self.b, self.rho)
-        P00 = np.where(k, self.P00 - 2 * self.P01 + self.P11 + q_rho, self.P00 + cfg.rw_sd ** 2)
-        P01 = np.where(k, self.P01 - self.P11, 0.0)
-        P11 = np.where(k, self.P11 + cfg.b_walk_sd ** 2, self.P11)
-        # ---- correct, where a density reading arrives
         due = self.observed & ((t - self.phase) % max(1, cfg.obs_every_s) == 0)
         if cfg.obs_dropout > 0:
             due &= self.rng.random(n) >= cfg.obs_dropout
+        z = np.zeros(n)
         if due.any():
             z = (np.asarray(rho_true) * (1 + self.gamma) * (1 + self.rng.normal(0, cfg.obs_rel_sd, n))
                  + self.rng.normal(0, cfg.obs_abs_sd, n))
             z = np.maximum(z, 0.0)
-            R = (cfg.obs_rel_sd * np.maximum(z, 0.5)) ** 2 + cfg.obs_abs_sd ** 2
-            S = P00 + R
-            K0, K1 = P00 / S, P01 / S
-            y = z - self.rho
-            self.rho = np.where(due, self.rho + K0 * y, self.rho)
-            self.b = np.where(due & k, self.b + K1 * y, self.b)
-            nP00 = (1 - K0) * P00
-            nP01 = (1 - K0) * P01
-            nP11 = P11 - K1 * P01
-            P00 = np.where(due, nP00, P00)
-            P01 = np.where(due, nP01, P01)
-            P11 = np.where(due, nP11, P11)
-        self.P00, self.P01, self.P11 = P00, P01, P11
-        self.rho = np.where(self.blind, 0.0, np.maximum(self.rho, 0.0))
+        state = (self.rho, self.b, self.P00, self.P01, self.P11)
+        self.rho, self.b, self.P00, self.P01, self.P11 = kf_step(state, cin, cout, self.area, self.counted,
+                                                                 due, z, self.blind, cfg)
         if self.flagged.any():
             self.rho = np.where(self.flagged, np.maximum(self.rho, self.frozen), self.rho)
         return self.rho
