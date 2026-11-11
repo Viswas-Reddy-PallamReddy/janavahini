@@ -47,6 +47,7 @@ import numpy as np
 from qs_core import (ACT_HOLD, ACT_METER, ACT_NONE, CRITICAL, WATCH, CentralisedBaseline, QSNetwork, QSParams,
                      RouteParams, RouteQSNetwork, ThresholdBaseline)
 from route_graph import synthetic_site
+from sensing import Sensing, SensingConfig
 from site_flow import CONTROL, SCENARIOS, SiteFlow, branch_density_index, divert_shares
 
 RES = Path(__file__).resolve().parent / "results"
@@ -98,7 +99,8 @@ def hotspots(scenario, seed=0):
 def run(task):
     """task: (scenario, method, seed, hotspots[, extra]); extra may hold
     kills: [(node, t_s), ...] boards that die at t_s (no radio, no signal to their marshals),
-    rp: RouteParams overrides (e.g. FAILSAFE), label: free text copied to the output."""
+    rp: RouteParams overrides (e.g. FAILSAFE), label: free text copied to the output,
+    sensing: a SensingConfig as a dict (E12); without it the nodes see the true density."""
     scenario, method, seed, hot = task[:4]
     extra = task[4] if len(task) > 4 else {}
     g = synthetic_site()
@@ -123,6 +125,11 @@ def run(task):
     for node, t_s in extra.get("kills", []):
         kill_t[node] = t_s
     last_branch_rho = np.zeros(len(eu))
+    sens = Sensing(g, SensingConfig(**extra["sensing"]), seed) if "sensing" in extra else None
+    est = np.zeros(n)                                  # sensed density; the site starts empty
+    err_sq_comp = 0.0
+    err_max = 0.0
+    err_max_dense = 0.0                                # largest error where the true density >= 2
 
     divert = True
     m_cc = None
@@ -157,8 +164,9 @@ def run(task):
     peak_comp = peak_any = 0.0
     for t in range(sc.duration_s):
         rho = flow.rho
+        meas = est if sens is not None else rho        # what the boards measure (E12) or the truth
         dead = kill_t <= t
-        seen = np.where(dead, 0.0, rho)                # a dead board reports nothing
+        seen = np.where(dead, 0.0, meas)               # a dead board reports nothing
         share = None
         if method == "none":
             action = np.zeros(n, int)
@@ -190,7 +198,7 @@ def run(task):
                 # what a junction knows about the room behind each branch: a gate relays its
                 # compartment's density. Old firmware: a dead compartment board reads as empty (0),
                 # a dead gate keeps its last value. Failure handling: unknown (no room).
-                branch_rho = np.where(dead[bidx], 0.0, rho[bidx])
+                branch_rho = np.where(dead[bidx], 0.0, meas[bidx])
                 branch_rho = np.where(dead[ev], last_branch_rho, branch_rho)
                 if failure_handling:
                     branch_rho = np.where(dead[bidx] | dead[ev], np.inf, branch_rho)
@@ -202,9 +210,17 @@ def run(task):
                 action[is_junction & diverted] = ACT_NONE     # diverting instead of holding
         action = np.where(controlled & ~dead, action, ACT_NONE)     # a dead board's marshals get no signal
         control = CTRL[action]
-        flow.step(t, control, share)
+        edge_flow = flow.step(t, control, share)
 
         rho = flow.rho
+        if sens is not None:
+            est = sens.update(t, edge_flow, flow.last_arrivals, flow.last_exit_out, rho)
+            e = est - rho
+            err_sq_comp += float(np.mean(e[flow.comps] ** 2))
+            err_max = max(err_max, float(np.abs(e).max()))
+            dense = rho >= 2.0
+            if dense.any():
+                err_max_dense = max(err_max_dense, float(np.abs(e[dense]).max()))
         comp_rho = rho[flow.comps]
         peak_comp = max(peak_comp, float(comp_rho.max()))
         peak_any = max(peak_any, float(rho.max()))
@@ -222,6 +238,13 @@ def run(task):
            "held_node_s": held, "needless_hold_node_s": needless,
            "needless_pct": round(100 * needless / held, 1) if held else 0.0,
            "exited": int(flow.exited)}
+    if sens is not None:
+        out = {"sensing": sens.cfg.name, **out,
+               "est_rmse_comp": round((err_sq_comp / sc.duration_s) ** 0.5, 3),
+               "est_max_abs_err": round(err_max, 2), "est_max_abs_err_dense": round(err_max_dense, 2),
+               "blind_nodes": int(sens.blind.sum()), "counted_nodes": int(sens.counted.sum())}
+        print(json.dumps(out), flush=True)
+        return out
     if extra:
         out = {"label": extra.get("label", ""), "option": extra.get("option", method),
                "t_first_alert": extra.get("t_first_alert"),
