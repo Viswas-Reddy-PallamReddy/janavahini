@@ -325,7 +325,7 @@ a { color: var(--river); }
         <thead><tr><th style="width: 18%">Item</th><th>Requirement</th></tr></thead>
         <tbody>
           <tr><td>Hardware per node</td><td>ESP32 board with LoRa (SX1276); IP65 three-colour signal tower; IP65 enclosure; mains adapter with backup battery. <strong>Gate and exit nodes:</strong> two VL53L1X time-of-flight sensors, shaded from direct sun. <strong>Wide-road nodes:</strong> a density feed from an existing CCTV camera or an edge camera box, wired to the node.</td></tr>
-          <tr><td>Quantity</td><td>About <strong>250 nodes</strong> for the full site (68 compartments, 20 junctions, 10 Nagaras); <strong>10–15</strong> for the pilot. Gateway node(s) connect to the server over USB/serial.</td></tr>
+          <tr><td>Quantity</td><td><strong>244 nodes</strong> for the full site (136 gate and exit counter nodes; 108 density nodes at compartments, junctions, roads and Nagaras) plus <strong>10 zone gateways</strong> bridging the mesh to the ICCC over 4G; <strong>11 nodes and a gateway</strong> for the pilot.</td></tr>
           <tr><td>Software</td><td>Open-source ESP32 firmware, FastAPI backend and web dashboard; runs on one server or VM at the ICCC.</td></tr>
           <tr><td>Infrastructure</td><td>Power and mounting points at gates, roads and junctions. Counters only where barricades already form lanes (gates, exits); <strong>no road is narrowed</strong> for counting.</td></tr>
           <tr><td>Integration</td><td>(a) Read crowd counts from existing CCTV/AI analytics, at the node where possible so a network cut does not blind it. (b) Push node states, alerts and node-down events to ICCC dashboards and RTGS via a documented REST/WebSocket API. (c) Accept ICCC inflow commands. (d) Staff messages in Telugu and English.</td></tr>
@@ -404,7 +404,7 @@ a { color: var(--river); }
     <ul>
       <li><strong>Scales without retraining.</strong> Adding a ghat means adding nodes and edges to the route map. Tested on a route graph of 68 compartments, 20 junctions and 10 Nagaras (244 virtual boards, 30% radio loss); radio load is 0.7% with 10 boards in range.</li>
       <li><strong>No central bottleneck.</strong> Decisions are local, so cost grows linearly with the number of nodes.</li>
-      <li><strong>Sustainable.</strong> Hardware is low-cost (₹4,400–7,500 per node), off-the-shelf and repairable locally; software is open-source with no licence fees.</li>
+      <li><strong>Sustainable.</strong> Hardware is low-cost (₹5,100–8,900 per gate or exit node), off-the-shelf and repairable locally; software is open-source with no licence fees.</li>
       <li><strong>Reused after Pushkaralu.</strong> The same nodes serve Maha Shivaratri, Dasara, temple queues, bus stands and railway stations, and the approach transfers to other mass gatherings such as Krishna Pushkaralu.</li>
     </ul>
     <div class="tw">
@@ -444,22 +444,22 @@ a { color: var(--river); }
     <div class="cols" style="break-inside: avoid">
       <div class="tw">
         <table>
-          <thead><tr><th>One counter node</th><th class="num">₹ (retail)</th></tr></thead>
+          <thead><tr><th>One gate or exit (counter) node</th><th class="num">₹ (retail)</th></tr></thead>
           <tbody>
             <tr><td>ESP32 board with LoRa radio (SX1276) [11]</td><td class="num">1,650</td></tr>
-            <tr><td>Two time-of-flight counting sensors (VL53L1X) [12]; gate and exit nodes only (wide-road nodes use existing CCTV, or an edge camera at vendor quote)</td><td class="num">960 – 1,980</td></tr>
-            <tr><td>Three-colour IP65 signal tower [13]</td><td class="num">630 – 1,560</td></tr>
-            <tr><td>IP65 enclosure [14]</td><td class="num">110 – 300</td></tr>
-            <tr><td>Power: mains adapter + backup battery (our estimate)</td><td class="num">1,000 – 2,000</td></tr>
-            <tr class="total"><td>Per node</td><td class="num">≈ 4,400 – 7,500</td></tr>
+            <tr><td>Two time-of-flight counting sensors (VL53L1X) [12], shaded</td><td class="num">1,130 – 1,330</td></tr>
+            <tr><td>Three-colour IP65 signal tower with buzzer [13]</td><td class="num">630 – 3,135</td></tr>
+            <tr><td>IP65 enclosure [14], pole clamp, sun hood</td><td class="num">410 – 800</td></tr>
+            <tr><td>Power: 12 V 7 Ah battery (about 15 h backup), adapter, wiring</td><td class="num">1,300 – 2,000</td></tr>
+            <tr class="total"><td>Per counter node</td><td class="num">≈ 5,100 – 8,900</td></tr>
           </tbody>
         </table>
       </div>
       <div class="stack">
-        <p><strong>Pilot</strong> (one model compartment, 10–15 nodes): about <strong>₹0.5–1.1 lakh</strong> of hardware.</p>
-        <p><strong>Full site</strong> (about 250 nodes, as in our site model): about <strong>₹11–19 lakh</strong> of hardware, before installation, 10% spares and maintenance.</p>
+        <p><strong>Pilot</strong> (Kotilingala model compartment: 11 nodes and a gateway, with our own cameras): about <strong>₹3.4–5.2 lakh</strong> all-in, including GST, installation, operations and validation.</p>
+        <p><strong>Full site</strong> (244 nodes and 10 zone gateways, as in our site model): about <strong>₹25–43 lakh</strong> all-in if wide-area density comes from the CCTV the state is installing, or <strong>₹41–64 lakh</strong> with our own camera on each of the 108 wide-area nodes. That is under 0.02% of the ₹4,026 crore of Pushkaralu works [16].</p>
         <p><strong>Software</strong> is open-source and runs on one server or VM at the ICCC.</p>
-        <p class="small">Indicative only: unit prices are public retail listings (November 2026) before GST and bulk discounts, and will be replaced by vendor quotes. Nodes are reused after the event.</p>
+        <p class="small">Indicative only: unit prices are public retail listings (November 2026); the separate budget plan gives every line, its source and its assumption. Full-site spending follows a go / no-go review of the pilot. Nodes are reused after the event.</p>
       </div>
     </div>
   </section>
@@ -484,7 +484,7 @@ a { color: var(--river); }
       <li>Permission and police coordination for a live pilot at Maha Shivaratri (Feb–Mar 2027), including mounting points and power at gates and junctions.</li>
       <li>Police and volunteer time for drills on the three-colour protocol.</li>
       <li>A server or VM in the RMC or state data centre.</li>
-      <li>Procurement support for about 250 nodes.</li>
+      <li>Procurement support for 244 nodes and 10 zone gateways.</li>
     </ol>
   </section>
 
@@ -512,10 +512,11 @@ a { color: var(--river); }
       <li>RiMEA e.V., <i>Guideline for Microscopic Evacuation Analysis</i>, version 4.</li>
       <li>U. Weidmann, <i>Transporttechnik der Fussgänger</i>, ETH Zürich, 1993.</li>
       <li>Hubtronics, LILYGO LoRa32 ESP32 SX1276 listing. <a href="https://hubtronics.in/ttgo">hubtronics.in/ttgo</a></li>
-      <li>Quartz Components and FlyRobo, VL53L1X module listings. <a href="https://quartzcomponents.com/products/nano-a000005">quartzcomponents.com</a>; <a href="https://www.flyrobo.in/vl53l1x-laser-time-flight-ranging-sensor-module">flyrobo.in</a></li>
-      <li>IndiaMART tower-light listings (24 V, IP65). <a href="https://m.indiamart.com/impcat/tower-light.html">m.indiamart.com/impcat/tower-light.html</a></li>
+      <li>FlyRobo, VL53L1X module (₹663; ₹566 at 15+). <a href="https://www.flyrobo.in/vl53l1x-laser-time-flight-ranging-sensor-module">flyrobo.in/vl53l1x-laser-time-flight-ranging-sensor-module</a></li>
+      <li>IndiaMART tower-light listings (3-tier, 24 V, IP65, buzzer, ₹630). <a href="https://m.indiamart.com/impcat/tower-light.html">m.indiamart.com/impcat/tower-light.html</a>; Schneider Electric India e-shop, XVGB3SH (₹3,134.72). <a href="https://eshop.se.com/in/">eshop.se.com/in</a></li>
       <li>IndiaMART ABS enclosure listings (IP65). <a href="https://m.indiamart.com/impcat/abs-enclosure.html">m.indiamart.com/impcat/abs-enclosure.html</a></li>
       <li>Siasat, "AP gears up for Godavari Pushkaralu 2027, expects 10 crore devotees", 3 Jun 2026. <a href="https://www.siasat.com/ap-gears-up-for-godavari-pushkaralu-2027-expects-10-crore-devotees-3481611/">siasat.com/…3481611</a></li>
+      <li>The Hindu, "AI to help manage crowd during 2027 Godavari Pushkaralu in Andhra Pradesh", 25 Aug 2026: 4,932 works costing ₹4,026 crore; CCTV at entry and exit points. <a href="https://www.thehindu.com/news/national/andhra-pradesh/ai-to-help-manage-crowd-during-2027-godavari-pushkaralu-in-andhra-pradesh/article71388987.ece">thehindu.com/…article71388987</a></li>
     </ol>
   </section>
 </main>

@@ -260,7 +260,7 @@ a { color: var(--river); }
         <thead><tr><th style="width: 18%">Item</th><th>Requirement</th></tr></thead>
         <tbody>
           <tr><td>Hardware per node</td><td>ESP32 board with LoRa (SX1276); IP65 three-colour signal tower; IP65 enclosure; mains adapter with backup battery. Gate and exit nodes: two VL53L1X ToF sensors, shaded. Wide-road nodes: a density feed from existing CCTV or an edge camera box, wired to the node.</td></tr>
-          <tr><td>Quantity</td><td>About 250 nodes for the full site (68 compartments, 20 junctions, 10 Nagaras); 10–15 for the pilot. Gateway node(s) connect to the server over USB/serial.</td></tr>
+          <tr><td>Quantity</td><td>244 nodes for the full site (136 gate and exit counter nodes; 108 density nodes at compartments, junctions, roads and Nagaras) plus 10 zone gateways bridging the mesh to the ICCC over 4G; 11 nodes and a gateway for the pilot.</td></tr>
           <tr><td>Software</td><td>Open-source ESP32 firmware, FastAPI backend and web dashboard; runs on one server or VM at the ICCC.</td></tr>
           <tr><td>Infrastructure</td><td>Power and mounting points at gates, roads and junctions. Counters only where barricades already form lanes; no road is narrowed for counting.</td></tr>
           <tr><td>Integration</td><td>(a) Read crowd counts from existing CCTV/AI analytics, at the node where possible so a network cut does not blind it. (b) Push node states, alerts and node-down events to ICCC dashboards and RTGS via a documented REST/WebSocket API. (c) Accept ICCC inflow commands. (d) Staff messages in Telugu and English.</td></tr>
