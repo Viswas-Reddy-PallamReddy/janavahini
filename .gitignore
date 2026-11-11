@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+firmware/.pio/
+node_modules/
+.claude/
+# per-run traces: regenerate with the experiments
+sim/results/e3/
+sim/results/e8/
+sim/results/e10/
+sim/results/sil/
+sim/results/_*

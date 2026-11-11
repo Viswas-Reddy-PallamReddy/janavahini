@@ -1,0 +1,9 @@
+trace,config,seeds,missed_by_firmware_total,extra_in_firmware_total,first_act_delay_median_s,first_act_delay_worst_s,first_act_earliest_s,action_agreement_pct_mean,needless_acting_node_s_per_run,needless_acting_node_s_python,bytes_per_node_s,airtime_per_msg_us
+compartment-surge,as modelled,10,0,0,0.0,2.0,-2.0,99.17,0.0,0,24.4,720
+compartment-surge,with failure handling (deployed),10,0,0,0.0,3.0,-2.0,99.6,0.0,0,24.4,720
+compartment-blocked,as modelled,10,0,0,0.0,4.0,-2.0,99.29,0.0,0,24.4,720
+compartment-blocked,with failure handling (deployed),10,0,0,-0.5,5.0,-3.0,99.89,0.0,0,24.4,720
+site-surge,as modelled,10,0,0,0.0,5.0,-2.0,99.91,5288.5,5515,24.2,720
+site-surge,with failure handling (deployed),10,0,0,0.0,4.0,-110.0,99.96,5379.3,5515,24.2,720
+site-blocked,as modelled,10,0,0,0.5,3.0,-3.0,100.0,0.0,0,24.2,720
+site-blocked,with failure handling (deployed),10,0,0,0.0,1.0,-2.0,99.99,0.0,0,24.2,720

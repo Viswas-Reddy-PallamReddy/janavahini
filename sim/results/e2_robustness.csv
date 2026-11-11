@@ -1,0 +1,19 @@
+scenario,method,link_loss,road_warned_pct,median_road_lead_s
+surge,qs (no backhaul needed),0.0,100.0,121.0
+surge,qs (no backhaul needed),0.1,100.0,120.0
+surge,qs (no backhaul needed),0.3,100.0,119.0
+surge,qs (no backhaul needed),0.5,100.0,105.5
+surge,route-qs (no backhaul needed),0.0,100.0,172.0
+surge,route-qs (no backhaul needed),0.1,100.0,172.0
+surge,route-qs (no backhaul needed),0.3,100.0,170.0
+surge,route-qs (no backhaul needed),0.5,100.0,167.5
+surge,"centralised, backhaul cut at 250 s",0.0,0.0,
+blocked,qs (no backhaul needed),0.0,100.0,96.0
+blocked,qs (no backhaul needed),0.1,100.0,96.0
+blocked,qs (no backhaul needed),0.3,100.0,94.0
+blocked,qs (no backhaul needed),0.5,100.0,89.0
+blocked,route-qs (no backhaul needed),0.0,100.0,108.0
+blocked,route-qs (no backhaul needed),0.1,100.0,107.0
+blocked,route-qs (no backhaul needed),0.3,100.0,105.5
+blocked,route-qs (no backhaul needed),0.5,100.0,101.5
+blocked,"centralised, backhaul cut at 250 s",0.0,100.0,294.0

@@ -1,0 +1,11 @@
+trace,killed,options,alive_node_seconds,identical_pct,differing
+compartment-surge,G@500s,2-hop backup + hold until restored,8000,100.0,0
+compartment-surge,G@500s,2-hop backup + hold until restored + escalate,8000,100.0,0
+compartment-surge,C1@500s,2-hop backup + hold until restored,8000,100.0,0
+compartment-surge,C1@500s,2-hop backup + hold until restored + escalate,8000,100.0,0
+compartment-surge,G@500s + C1@700s,2-hop backup + hold until restored,7200,100.0,0
+compartment-surge,G@500s + C1@700s,2-hop backup + hold until restored + escalate,7200,100.0,0
+site-surge,G25@900s,2-hop backup + hold until restored,875700,100.0,0
+site-surge,G25@900s,2-hop backup + hold until restored + escalate,875700,100.0,0
+site-surge,C25@900s,2-hop backup + hold until restored,875700,100.0,0
+site-surge,C25@900s,2-hop backup + hold until restored + escalate,875700,100.0,0

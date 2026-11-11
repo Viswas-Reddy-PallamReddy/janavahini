@@ -1,0 +1,10 @@
+# Python 3.12. Install jupedsim separately with: pip install --no-deps jupedsim
+shapely
+numpy
+matplotlib
+pandas
+networkx
+fastapi
+uvicorn
+pyserial
+deprecated

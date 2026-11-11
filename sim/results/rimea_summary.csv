@@ -1,0 +1,4 @@
+max_density_after,max_density_before,measured,pass,required,specific_flow_p_per_m_s,test
+,,30.1,True,26-34 s,,RiMEA 1 - speed in corridor
+,,RMSE 0.202 m/s,True,qualitative agreement (speed falls with density),,RiMEA 4 - fundamental diagram vs Weidmann
+0.38,5.0,,True,"congestion before bottleneck, none after",0.85,RiMEA 12 - bottleneck

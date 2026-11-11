@@ -1,0 +1,604 @@
+# Janavahini (PS-01): Technical Report
+## PS-01 Real-Time Crowd Monitoring and Congestion Management
+
+> PS-03 (lost-person reunification) is documented on the `ps-03` branch.
+
+**Challenge:** RTIH × RMC *Innovation-Led Solutions for Godavari Pushkaralu 2027*
+**Status as of:** 31 Oct 2026. Submission deadline is 7 Nov 2026; demo/pitch day is 12 Nov 2026.
+**Scope:** every approach tried, including the ones that failed, every result with its exact numbers, the limitations, and how to reproduce each result. All numbers come from the files in `pushkaralu/sim/results/`.
+
+---
+
+## 0. Status at a glance
+
+| Item | Status |
+|---|---|
+| Literature survey (86 verified references) | ✅ `literature_survey.md`, `references.bib` |
+| Pedestrian simulator verified (RiMEA tests 1, 4, 12) and calibrated (Weidmann) | ✅ |
+| PS-01 algorithm: route-graph quorum-sensing alerts | ✅ simulated (compartment and site scale) |
+| PS-01 closed-loop agent-based test of the **final** route-graph algorithm | ✅ E3, 5 seeds: **0 s above 4 p/m² in 5 of 5** (§2.4) |
+| PS-01 repeated runs | ✅ E3 5 seeds, E8 20 random scenario draws (§2.4, §2.6) |
+| PS-01 node (board) failures | ✅ found a real weakness (one dead board ≈ no system), fixed in firmware in 3 steps, tested in SIL, JuPedSim and the site model; remaining gaps: 2 adjacent dead boards, a dead approach-road board (§2.8) |
+| PS-01 hybrid ICCC + mesh | ✅ (§2.9) |
+| Mathematical model checked against the simulations | ✅ E11 (§2.10) |
+| ESP32 firmware (3 roles) | ✅ compiles. Runs the **route-graph QS** with node-failure handling. ✅ Firmware code tested in software-in-the-loop (SIL) against the Python model: 100% identical (§4.1).  The final change (held + bypassed = the larger level) was re-checked on 31 Oct under WSL2 `g++`: still 100% identical. ⚠ Not yet flashed or tested on boards |
+| Backend (REST API for the command centre) + dashboard | ✅ end-to-end tests pass (`backend/test_app.py`) |
+| Concept notes, pitch decks, demo videos | ❌ to do |
+| Eligibility of a student team (Stage 1 asks for "entity registration") | ⚠ email to RTIH pending |
+| DPDP Rules 2025 Gazette check (child tracking, §9) | ⚠ pending |
+
+---
+
+## 1. Simulation framework and why it is credible
+
+### 1.1 Acceptance basis
+No government "approves" a crowd simulator. Regulators accept **validated tools checked against standard test suites**, so we use three layers of credibility:
+1. **A recognised tool.** JuPedSim (Forschungszentrum Jülich, open source).
+2. **Standard verification.** The RiMEA guideline test cases, the de facto international benchmark (Vadere runs them on every code change).
+3. **Calibration** against Weidmann's fundamental diagram.
+
+The supporting frameworks we cite are ISO 20414:2020, NIST TN 1822 and, for India, the NDMA guide *Managing Crowds at Events and Venues of Mass Gathering* (2014).
+
+### 1.2 RiMEA verification (`sim/rimea_tests.py`, default time gap 1.0 s)
+| Test | Requirement | Measured | Result |
+|---|---|---|---|
+| RiMEA 1: walking speed in a 40 m corridor | 26–34 s | 30.1 s | Pass |
+| RiMEA 4: fundamental diagram | speed falls with density | RMSE 0.202 m/s vs Weidmann | Pass |
+| RiMEA 12: bottleneck | congestion before, none after | 5.0 vs 0.38 p/m²; flow 0.85 p/(m·s) | Pass |
+
+Fundamental diagram, measured vs Weidmann (m/s): 0.5 p/m² → 1.139 vs 1.326 · 1.0 → 0.70 vs 1.06 · 2.0 → 0.45 vs 0.61 · 3.0 → 0.283 vs 0.336 · 4.0 → 0.21 vs 0.159 · 5.0 → 0.157 vs 0.038.
+
+### 1.3 Calibration (`sim/calibrate.py`)
+The model's time gap *T* was swept against Weidmann's diagram and against the RiMEA 12 bottleneck flow.
+
+| T (s) | FD RMSE (m/s) | Bottleneck flow p/(m·s) | Note |
+|---|---|---|---|
+| 1.0 | 0.198 | 0.85 | default |
+| 0.7 | **0.108** (best fit) | **0.11** | **rejected: the bottleneck clogs** |
+| **0.5** | 0.207 | **1.46** | **chosen** |
+| 0.35 | 0.339 | 1.85 | |
+
+**Criterion:** lowest error, subject to bottleneck flow ≥ Weidmann's peak capacity of **1.22 p/(m·s)**. Picking the best fit alone (T = 0.7) would have produced unrealistic clogging. The ghat scenarios use T = 0.5, loaded from `results/calibration.json`.
+
+### 1.4 Compartment model (`sim/ghat_scenario.py`)
+A Kotilingala-style compartment. The dimensions are **assumed** until RTIH shares the model-compartment specs.
+- **Approach road** 60 × 8 m, in two zones: R1 (240 m²) and R2 (240 m²).
+- **Entry gate** 3 m wide. The gate-approach zone G is 64 m²; this is the 2015 failure point.
+- **Compartment** 30 × 20 m: holding area C1 (300 m²) and bathing steps C2 (300 m²). Pilgrims stand in the river 60–180 s.
+- **Exit corridor** 2 m wide (zone X, 16 m²).
+- **Arrivals:** desired speed N(1.25, 0.2) m/s, clipped to 0.6–1.8 m/s.
+- **Scenarios:**
+  - **normal:** 1.2 arrivals/s;
+  - **surge:** 1.2 → 4.5/s from 300 to 900 s, the day-1 surge;
+  - **blocked:** 1.5/s, with the exit blocked from 300 s.
+- **Uncontrolled peak densities (p/m²):**
+  - normal: X 1.38, all else < 0.4;
+  - **surge: C2 6.05, C1 4.59**, X 2.56, G 1.67;
+  - **blocked: X 4.31**, C2 1.45.
+- **Sensing:** six nodes (R1, R2, G, C1, C2, X), each reporting zone density every second, plus crowd pressure ρ·Var(v), the measure of Johansson et al. 2008. Danger means any core zone (G, C1, C2, X) ≥ 4 p/m² for 10 s.
+
+---
+
+## 2. PS-01: Crowd monitoring and early warning
+
+### 2.1 Problem framing
+- **The 2015 Pushkaralu failure:** 27 deaths in a day-1 surge at a narrow entrance.
+- **Today's tool:** CCTV counts updated hourly. IIIT-H's 2015 system reached about 70–75% accuracy.
+- **The physics:** a crush builds when inflow exceeds outflow. The people who can stop it (police on the approach road) can't see it. **The warning must travel upstream, early, and keep working when the network or the command centre fails.**
+- **Literature thresholds:**
+  - 4 p/m², the Green Guide limit for a moving crowd;
+  - 5–6 p/m², where shock waves become possible (Still);
+  - flow collapse, stop-and-go waves and crowd turbulence come 10–30 min before a disaster (Helbing 2007, Johansson 2008).
+
+### 2.2 Architecture
+- **Sensing:** a non-camera line counter at each gate or road segment (thermal array or ToF, gates narrowed to single or double file). **Or** density from existing CCTV/AI counts, since the algorithm takes density from any source.
+- **Node:** an ESP32 running the alert algorithm locally, with a 3-colour output.
+- **Mesh:** ESP-NOW for short hops, LoRa for long hops. LoRaWAN uplink is unsuitable for low-latency alerts (Adelantado 2017), so we use peer-to-peer.
+- **Command centre:** a FastAPI backend that aggregates for the ICCC, with documented REST/OpenAPI at `/docs`. **Decisions never depend on it.**
+
+### 2.3 Algorithm evolution (what failed and why)
+
+**v1: averaging diffusion ("Laplacian"). Failed.**
+A_i(t+1) = δA_i + (1−δ)s_i + D·Σ_j w_ij (A_j − A_i)
+- Surge: CRITICAL came **49 s after** the danger point (lead −49 s), and the road was **never** warned.
+- **Why:** averaging pulls the hotspot down towards its calmer neighbours. The literature survey had flagged exactly this pitfall. It is kept only as an ablation.
+
+**v2: gradient relay.**
+A_i(t+1) = δA_i + (1−δ)·max(s_i, γ·max_j A_j)
+- The hotspot keeps its level, and neighbours hear γ, γ², … of it.
+- **Rate-term fix:** in normal flow the rate term produced **72 CRITICAL alerts/h**, because one person entering a 16 m² zone looks like a surge. Fix: the rate counts only at ρ ≥ 1.5 p/m² and is measured over 30 s. False alerts became **0**.
+- **γ sweep** (`e5_gamma_sweep.csv`, road lead in s):
+
+| γ | Surge core lead | Surge road lead | Blocked core | Blocked road | False WATCH/h |
+|---|---|---|---|---|---|
+| 0.7 | 102 | **−25** | 107 | 85 | 0 |
+| 0.8 | 102 | 68 | 107 | 92 | 0 |
+| **0.9** | 102 | **121** | 107 | 96 | 0 |
+| 0.95 | 102 | 146 | 107 | 98 | 0 |
+
+- **Chosen γ = 0.9**, about 3 hops of reach.
+- **Remaining weakness:** the signal still decays per hop, and it reaches nodes that don't feed the hotspot. At site scale this caused heavy over-alerting (§2.6).
+
+**v3 (final): route-graph QS. Alerts follow the pilgrim route** (`sim/route_graph.py`, `qs_core.RouteQSNetwork`).
+- **The site as a directed graph:**
+  - nodes: Nagara/source, road, junction, gate, compartment, exit;
+  - edges: route share, i.e. the fraction of the upstream node's outflow that takes the edge, and walk time;
+  - node capacity = width × 1.22 p/(m·s).
+- **Own level:** each node keeps A_i = δA_i + (1−δ)s_i, which stays local.
+- **Relayed threat** (heard from the nodes it sends pilgrims to):
+
+  threat_i = Σ_{j ∈ successors} share_ij · L_j,  where L_j = max(A_j, threat_j)
+
+  This is the **fraction of my outflow heading into trouble**. A junction whose 4 branches are all crowded hears the full alarm; one crowded branch out of four gives ¼.
+- **Actions** (through a hysteresis state machine on the threat):
+  - WATCH → METER (50% flow);
+  - CRITICAL → HOLD (10% trickle);
+  - **junction DIVERT:** the share of a branch whose own level is ≥ 0.6 moves to sibling branches below 0.3 that still have room (density behind them < 2.0 p/m²).
+- **Unchanged from v2:** hysteresis, minimum dwell time, staleness timeout and rate floor.
+- **Two design corrections the site test forced** (§2.6):
+  1. **Single-branch share weighting → SUM over branches.** Junctions never acted, only small gates held, and the gates jammed.
+  2. **The time-horizon rule was dropped.** "Hold only within 180 s walk of the hotspot" jammed the small near nodes; holding further upstream, where there is buffer space, is safer.
+  - There was also a **diversion bug**: diversion was tested on the *share-weighted* level (¼ of the alarm), so it never triggered. It now uses each branch's own level.
+
+**Final parameters** (`QSParams`, `RouteParams`):
+- ρ_crit = 4.0;
+- δ = 0.85;
+- rate horizon 60 s, rate floor 1.5 p/m², rate window 30 s;
+- θ_watch = 0.6, θ_crit = 0.85, hysteresis 0.1;
+- minimum dwell 5 s;
+- staleness timeout 5 s;
+- γ = 0.9 (gradient mode only);
+- use_share = True, use_horizon = False, meter = True.
+
+### 2.4 Compartment-scale results (`qs_alert.py`)
+
+**E1: alert timing (lead before danger; danger at 669 s in the surge, 438 s in the blocked scenario):**
+| Method | Surge core | Surge road | Blocked core | Blocked road |
+|---|---|---|---|---|
+| Threshold (today's practice) | 47 s | never | 83 s | never |
+| Threshold + rate (ablation) | 107 s | never | 294 s | never |
+| Centralised command centre (backhaul up) | 107 s | 185 s | 294 s | 294 s |
+| Gradient QS (v2) | 102 s | 121 s | 107 s | 96 s |
+| Laplacian QS (v1, ablation) | −49 s | never | 97 s | never |
+| **Route-graph QS (v3)** | **102 s** | **172 s** | **107 s** | **108 s** |
+
+**E2: robustness (road warned %, median road lead), no backhaul needed:**
+| Link loss | Gradient QS, surge | Route QS, surge | Gradient QS, blocked | Route QS, blocked |
+|---|---|---|---|---|
+| 0% | 100%, 121 s | 100%, 172 s | 100%, 96 s | 100%, 108 s |
+| 10% | 100%, 120 s | 100%, 172 s | 100%, 96 s | 100%, 107 s |
+| 30% | 100%, 119 s | 100%, 170 s | 100%, 94 s | 100%, 105.5 s |
+| 50% | 100%, 105.5 s | 100%, 167.5 s | 100%, 89 s | 100%, 101.5 s |
+
+With the backhaul cut at 250 s, the centralised method warned the road **0%** of the time in the surge. In the blocked scenario it warned 100% (294 s ahead), only because its warning came *before* the cut.
+
+**E4: false alerts in normal flow:** 0 CRITICAL/h and 0 WATCH/h for every method (peak density 1.38).
+
+**E3: closed loop, JuPedSim, 5 seeds** (`qs_alert.py --experiment e3 --e3-seeds 1 2 3 4 5`; `e3_surge_summary.csv`).
+- **The control:** each method controls inflow at the road head (WATCH → HOLD 0.5/s, CRITICAL → CLOSE).
+- **What a seed varies:** arrivals, walking speeds and the radio-loss stream.
+- **Format:** values are mean ± sd over the 5 seeds.
+
+| Variant (surge) | Peak (p/m²) | s ≥ 4 | s ≥ 5 | Seeds never ≥ 4 | Diverted |
+|---|---|---|---|---|---|
+| No system | 6.01 ± 0.04 | 831 ± 6 | 746 | 0 / 5 | 0 |
+| Threshold (today) | 6.01 ± 0.04 | 831 ± 6 | 746 | 0 / 5 | 0 |
+| Centralised, backhaul cut at 250 s | 6.01 ± 0.04 | 831 ± 6 | 746 | 0 / 5 | 0 |
+| Gradient QS (v2), 30% link loss | 4.14 ± 0.25 | 327 ± 217 (0–487) | 0 | 1 / 5 | 1,953 |
+| **Route-graph QS (v3), 30% link loss, no backhaul** | **3.34 ± 0.22** | **0** | **0** | **5 / 5** | 2,002 |
+| Centralised, backhaul up | 2.93 ± 0.34 | 0 | 0 | 5 / 5 | 1,911 |
+| Hybrid ICCC + route QS, backhaul up (§2.9) | 2.93 ± 0.34 | 0 | 0 | 5 / 5 | 1,911 |
+| Hybrid, backhaul cut mid-surge at 520 s (§2.9) | 3.13 ± 0.39 | 0 | 0 | 5 / 5 | 1,965 |
+| Route QS, gate board dies, **no** failure handling (§2.8; 3 seeds) | 6.07 ± 0.04 | 767 (749–778) | 684 | 0 / 3 | 259 |
+| Route QS, gate board dies, failure handling (3 seeds) | 3.28 ± 0.26 | **0** | 0 | 3 / 3 | 2,122 |
+| Route QS, holding-area board dies, **no** failure handling (3 seeds) | 6.06 ± 0.02 | 767 (749–778) | 686 | 0 / 3 | 261 |
+| Route QS, holding-area board dies, failure handling (3 seeds) | 3.30 ± 0.21 | **0** | 0 | 3 / 3 | 2,196 |
+
+- **Today's threshold practice behaves exactly like no system.** The road nodes never alarm in time. The runner checks this exactly: the controller is replayed on the uncontrolled run, and if it never leaves OPEN, the closed loop *is* the uncontrolled run.
+- **Route-graph QS kept the crowd under 4 p/m² in every seed, without any backhaul.** The peak is 0.4 p/m² above the centralised command centre with its network up. That centralised case is an oracle (all data, no radio loss) and is not available when the network fails.
+- **Gradient QS (v2) is seed-sensitive.** It spends 0 to 487 s above 4. The single-seed number reported earlier (567 s) came from an older code version.
+- **Limitation:** 5 seeds of one surge scenario. The spread is small, but this is not a confidence interval over scenarios. E8 covers that (20 scenario draws).
+
+### 2.5 Site-scale model (`sim/site_flow.py`, `sim/site_experiment.py`)
+- **Synthetic site:** 10 Nagaras (entry areas, 20,000 m², 40 m wide) feed 10 approach roads (7,500 m², 30 m), which feed 20 junctions (1,000 m², 25 m; each Nagara road splits 50/50 to two junctions). These feed 68 compartments: 8 junctions × 4 and 12 junctions × 3, at equal shares. Each compartment has a gate (5 m), the compartment itself (600 m², 20 m) and an exit (3 m), 100 m of river bank apiece.
+- **Flow model:** cell-transmission style.
+  - sending_i = min(N_i/T_i, w_i·1.22) × control_i;
+  - receiving_j = w_j·1.22·clip((5.4 − ρ_j)/(5.4 − 1.75), 0, 1);
+  - proportional scaling when receivers are full (back-pressure);
+  - compartments add a 300 s bathing dwell to T_i.
+- **Control multipliers:** open 1.0, METER 0.5, HOLD 0.1.
+- **Scenarios:**
+  - **site-surge:** 6 p/s per Nagara (60 p/s site-wide), with Nagara 3 at 50 p/s from 600 to 1,800 s;
+  - **site-blocked:** compartment 30's exit drops to 2% capacity from 300 s.
+- **Uncontrolled outcomes:** surge 4.85 p/m², **1,603 s ≥ 4**; blocked 4.48 p/m², **311 s ≥ 4**.
+- **Mesh methods** run with 30% radio-link loss.
+- **"Needless hold"** = node-seconds of METER/HOLD at nodes that feed none of the places exceeding 3.5 p/m² *in the uncontrolled run*. Successful prevention is not counted as needless. (A first version of the metric did count it as needless and was wrong; it was fixed.)
+
+### 2.6 Site-scale results (E8, `e8_site_scale.csv`)
+
+**Surge:**
+| Method | Compartment s ≥ 4 | Any node s ≥ 4 | Peak anywhere | Held node-s | Needless | Exited |
+|---|---|---|---|---|---|---|
+| None | 1,603 | 1,603 | 4.85 | 0 | – | 201,957 |
+| Threshold | 431 | **1,700** | 5.18 | 5,703 | 0% | 199,071 |
+| Gradient QS (v2) | 0 | **1,842** | 5.03 | 22,573 | **45%** | **168,652** |
+| Centralised (up) | 0 | 0 | 2.29 | 9,240 | 0% | 197,897 |
+| Centralised (cut) | 1,603 | 1,603 | 4.85 | 0 | – | 201,957 |
+| **Route QS (v3)** | **0** | **0** | 3.39 | 9,389 | **0%** | **200,549** |
+| Route QS, no share weighting | 0 | 0 | 3.04 | 6,994 | 0% | 198,290 |
+| Route QS **with horizon** | 0 | **585** | 4.20 | 12,917 | **44%** | 203,809 |
+| Route QS, HOLD only (no METER) | 0 | 0 | 2.88 | **4,137** | 0% | 200,291 |
+| Route QS, no diversion | 0 | 0 | 3.39 | 9,575 | 0% | 199,690 |
+
+**Blocked exit:**
+| Method | Compartment s ≥ 4 | Peak anywhere | Held node-s | Needless | Exited |
+|---|---|---|---|---|---|
+| None / threshold / centralised-cut | 311 | 4.48 | 0 | – | 154,137 |
+| Gradient QS | 0 | 3.96 | 5,276 | 36% | 153,364 |
+| Centralised (up) | 0 | 3.37 | 5,640 | 0% | 151,929 |
+| **Route QS** | **0** | **2.42** | **1,358** | **0%** | **155,083** |
+| Route QS, no share weighting | 0 | 2.41 | 3,888 | 0% | 153,238 |
+| Route QS, **no diversion** | **60** | 4.26 | 1,383 | 0% | 154,137 |
+
+**E8 over 20 random scenario draws** (`site_experiment.py --seeds 0..19`; `e8_site_scale_summary.csv`).
+- **Seed 0** is the nominal scenario above, with a different link-loss stream.
+- **Seeds 1–19 draw:**
+  - **surge:** the surging Nagara, surge rate 35–60 p/s, start time, duration 15–25 min;
+  - **blocked:** the blocked compartment, residual exit capacity 1–10%, block time;
+  - **both:** base demand 5–7 p/s per Nagara and dwell 4–6 min.
+
+| Method | Surge: draws safe everywhere (s ≥ 4 = 0) | Surge: mean / worst peak | Blocked: draws safe | Blocked: mean / worst peak |
+|---|---|---|---|---|
+| None | 6 / 20 | 4.15 / 4.85 | 12 / 20 | 3.41 / 4.49 |
+| Threshold | 6 / 20 | 4.33 / 5.18 | 12 / 20 | 3.41 / 4.49 |
+| Gradient QS (v2) | **5 / 20** | 4.30 / 5.03 | 20 / 20 | 3.19 / 3.97 |
+| Centralised (up) | 20 / 20 | 2.27 / 2.47 | 20 / 20 | 2.83 / 3.37 |
+| Centralised (cut at 300 s) | 6 / 20 | 4.15 / 4.85 | 12 / 20 | 3.41 / 4.49 |
+| **Route QS (v3)** | **20 / 20** | 3.14 / 3.57 | **20 / 20** | **2.33 / 2.43** |
+| Route QS with horizon | 7 / 20 | 3.84 / 4.29 | 20 / 20 | 2.33 / 2.43 |
+| Route QS no diversion | 20 / 20 | 3.16 / 3.57 | **14 / 20** | 3.48 / 5.03 |
+| Route QS with failure handling (§2.8) | 20 / 20 | 2.98 / 3.57 | 20 / 20 | 2.33 / 2.43 |
+| Hybrid ICCC + route QS (§2.9) | 20 / 20 | 2.27 / 2.47 | 20 / 20 | 2.32 / 2.41 |
+| Hybrid, backhaul cut at 300 s | 20 / 20 | 3.14 / 3.57 | 20 / 20 | 2.33 / 2.43 |
+
+**Needless holds over 20 draws: a correction of the single-run claim.**
+- **The data.** Route QS holds needlessly in **4 of 20 surge draws and 6 of 20 blocked draws**. So does the centralised baseline, in the same draws.
+- **Why.** In every one of those draws, the uncontrolled crowd peaked at 2.6–3.4 p/m². That is below the 3.5 p/m² line that defines a hotspot, so there is no hotspot and every hold counts as needless.
+- **What it means.** These are near-misses where the rate term predicted a crossing that did not happen. Holding there is arguably prudent, but it is over-alerting and is reported as such.
+- **What it does not mean.** In draws with a real hotspot, route QS had 0 needless holds.
+
+**Findings:**
+1. **Route-graph QS matches the centralised command centre without any backhaul.** It was safe in 20 of 20 draws of both scenarios.
+   - **Surge:** a higher peak than centralised (3.14 vs 2.27) but slightly higher throughput.
+   - **Blocked:** a lower peak (2.33 vs 2.83, worst 2.43 vs 3.37) with **4× fewer holds**, because it diverts instead of stopping.
+2. **Hop-based QS (v2) over-alerts at site scale:** 45% needless holds, roads pushed above 4 p/m² for 1,842 s, and throughput down 16%. **Route awareness is essential.**
+3. **Holding only near the hotspot is harmful.** Small near nodes jam (585 s ≥ 4). Hold where there is buffer space.
+4. **Diversion is essential when a single compartment is blocked.** Without it: 60 s ≥ 4.
+5. **METER added little.** HOLD-only kept the surge safe with fewer holds (4,137 vs 9,389 node-s). Simpler operations ("slow / hold / divert") are justified.
+
+### 2.7 PS-01 limitations (state these openly)
+- **Repeated runs are few.** E3 has 5 seeds of one scenario and E8 has 20 scenario draws. NIST TN 1822-style convergence is shown only informally, through the small spread in E3.
+- **Perfect sensing:** inputs are exact simulated densities. Counting noise, dropouts and drift are untested. Node *failure* is now tested (§2.8).
+- **Site scale uses a macroscopic flow model and an invented layout.** The compartment geometry is assumed.
+- **Route shares at junctions are assumed known.** In the field: planned shares, updated from gate in/out counts.
+- **Over-alerting in near-miss draws** (above): 4–6 of 20 draws hold where no place would have passed 3.5 p/m².
+- **Blocked exit at compartment scale:** QS warns at 107 s against 294 s for centralised. The leak δ smooths a brief early spike in the small exit zone. A per-zone leak is a proposed fix, untested.
+- **Field requirements:** narrowed gates for counting; route map drawn per site; power, rain and theft of nodes.
+
+### 2.8 Node (board) failures (E9 SIL, E3 JuPedSim, E10 site; `failure_experiment.py`)
+
+**The weakness, as first found.** The SIL test (E9) killed a board in the middle of a surge. A node that stops hearing its successor drops that successor's level after 5 s, so the road node released its hold **4 s after the gate's board died**, while the compartment was still filling. In JuPedSim (E3, 3 seeds) one dead board, either the gate or the holding area, put the crowd **above 4 p/m² for 767 s on average**. With no system at all the figure is 831 s.
+
+**The fix, built in three steps. Each step was added because the previous one failed in a test:**
+1. **Hold until restored.** A successor that goes silent while it is alarming keeps its last level until it is heard again or an operator clears it.
+2. **2-hop backup.** Each node also listens to its successors' successors, and uses them only while the successor in between is silent. This bypasses a dead *relay*, such as a gate.
+3. **Escalation, "unknown is not safe".** Added after E10 found two failures of steps 1–2:
+   - **Problem 1: a board that died just before its own alarm.** It was "silent but calm", so nothing was held. Fix: a successor silent for more than 30 s counts as at least WATCH, and one silent while alarming counts as CRITICAL.
+   - **Problem 2: a dead *compartment* bypassed via its exit.** The exit was calm while the crowd inside the compartment kept growing unseen. Fix: a silent successor that is both held and bypassed counts as **the larger** of the two levels.
+
+   Escalation is the firmware default (`failsafeEscalate`).
+
+**JuPedSim, with failure handling (steps 1–2):** gate board or holding-area board dead → **0 s above 4 in 3 of 3 seeds**, for both (E3 table above).
+
+**E10: site scale, closed loop, 5 scenario draws per case.**
+- **Where boards die:** the hotspot's own compartment, the gate in front of it, its junction, its approach road, gate + junction together, and 5 / 10 / 20% of all boards at random.
+- **When:** at the first alert of a failure-free run. Gate and junction also 2 min before and 5 min after.
+- **What a dead board means:** it sends nothing, and its marshals get no signal.
+- **Each cell:** the number of draws where no place goes above 4 p/m².
+
+| Surge: boards that die | none (E1–E8 model) | hold | 2-hop backup | hold + backup | **+ escalation (deployed)** | ICCC, network up |
+|---|---|---|---|---|---|---|
+| hotspot compartment | 0 / 5 | 3 / 5 | 3 / 5 | 3 / 5 | **5 / 5** | 5 / 5 |
+| gate (2 min before / at / 5 min after the first alert) | 0 / 1 / 2 of 5 | 3 / 3 / 4 | 5 / 5 / 5 | 5 / 5 / 5 | **5 / 5 / 5** | 5 / 5 / 5 |
+| junction (before / at / after) | 0 / 0 / 0 | 0 / 0 / 3 | 5 / 5 / 5 | 5 / 5 / 5 | **5 / 5 / 5** | 5 / 5 / **1** |
+| approach road | 0 / 5 | 0 / 5 | 4 / 5 | 4 / 5 | **4 / 5** | **0 / 5** |
+| gate + junction together | 0 / 5 | 0 / 5 | 3 / 5 | 3 / 5 | 3 / 5 | 5 / 5 |
+| random 5% of boards | 2 / 5 | 2 / 5 | 3 / 5 | 3 / 5 | **5 / 5** | 4 / 5 |
+| random 10% | 3 / 5 | 3 / 5 | 4 / 5 | 4 / 5 | 4 / 5 | 4 / 5 |
+| random 20% | 1 / 5 | 2 / 5 | 2 / 5 | 2 / 5 | **4 / 5** | 4 / 5 |
+
+**Blocked exit** (4 draws with an alert):
+- **The deployed firmware** is safe in **4 of 4** draws in every failure case, including when the blocked compartment's own board dies.
+- **Without escalation** that case is 2 of 4.
+- **The ICCC with its network up** is also only 2 of 4 when the blocked compartment's board dies.
+
+**Findings:**
+- **A single dead board** anywhere on the route to the hotspot is fully covered by the deployed firmware: compartment, gate or junction, at any time, 5 of 5. Only the **approach road** misses one draw (4 of 5): its marshals are the ones who hold, and they are gone.
+- **Two adjacent dead boards (gate + junction)** defeat a 2-hop backup in 2 of 5 draws. This is expected: the model gives P(blind) = f² (§2.10 M3). The ICCC handles it, because it sees every board.
+- **The ICCC (network up) has its own failure weakness.** It cannot hold where the dead board's marshals stand. When the approach road's board dies it is unsafe in **5 of 5** draws (1,854 s above 4). When the junction's board dies after the first alert it is unsafe in 4 of 5.
+- **Cost:**
+  - Escalation serves about 1–5% fewer pilgrims when boards die, and up to 5% at 20% random failures, because unknown places are metered.
+  - With no failures, the deployed firmware behaves like route QS (E8 "route QS with failure handling": 20 of 20 draws safe, 0 false node-down reports).
+- **Staff alerts:**
+  - Each dead board is reported once, after 30 s.
+  - The first version reported after 5 s. At 51% message loss that flooded the control room: 108 false reports in a run with no failure.
+  - A second bug reported boards that had never been heard (at boot). Both are fixed.
+
+### 2.9 Hybrid: ICCC when the network is up, route QS always
+**Why.** The ICCC with a working network sees every sensor with no radio loss. It is the best a central system can do, and it beats route QS slightly on surges (peak 2.93 vs 3.34 in E3). But it fails completely when the network is cut: in E3 a command centre cut off at 250 s behaves exactly like no system. Mass gatherings are where mobile networks and backhaul fail.
+
+**What.** Each node takes the **stronger** action of the ICCC command and its own route-QS action. While the backhaul is up that is never weaker than the ICCC; when it is down, route QS alone continues.
+
+| | Surge, JuPedSim (5 seeds) | Surge, site (20 draws) | Blocked exit, site (20 draws) |
+|---|---|---|---|
+| ICCC, network up | 5 / 5 safe, peak 2.93 | 20 / 20, mean peak 2.27 | 20 / 20, mean peak 2.83 (worst 3.37) |
+| ICCC, network cut | **0 / 5**, 831 s ≥ 4 | **6 / 20** | **12 / 20** |
+| Route QS alone | 5 / 5, peak 3.34 | 20 / 20, 3.14 | 20 / 20, 2.33 (worst 2.43) |
+| **Hybrid, network up** | **5 / 5, peak 2.93** | **20 / 20, 2.27** | **20 / 20, 2.32 (worst 2.41)** |
+| **Hybrid, network cut** (E3 at 520 s mid-surge; site at 300 s) | **5 / 5, peak 3.13** | **20 / 20, 3.14** | **20 / 20, 2.33** |
+
+**The result:**
+- **With the network up,** hybrid is as good as the ICCC on surges and better on blocked exits, because route QS diverts.
+- **With the network down,** hybrid keeps the route-QS result instead of collapsing.
+- **The pitch:** the mesh does not compete with the ICCC. It makes the ICCC **resilient**.
+
+### 2.10 Mathematical model, checked against the simulations (E11, `sim/analytic_model.py`)
+Every prediction is listed against the matching measurement in `e11_analytic_vs_sim.csv`. Where the predictions are fitted to anything, the fit uses different runs from the ones they are tested on.
+
+**M1: one-equation model of the compartment, closed loop.**
+- **The equation.**
+  - dN/dt = I(t) − Q(N), with ρ_C2 = min(N / A_eff, ρ_jam);
+  - Q(N) = Q₀ / (1 + (N/N₅₀)^k): outflow that **falls** as the compartment fills, because bathers going in and coming out block each other.
+- **The fit.** Fitted on JuPedSim seeds 1–2 (uncontrolled): Q₀ = 1.25 p/s, N₅₀ = 375, k = 1.75, A_eff = 334 m², with an outflow RMSE of 0.17 p/s.
+- **The closed loop.** The road command comes from the real alert rules (`qs_core`):
+  - route QS: leaky level, relayed over 2 hops with an expected wait for lost messages;
+  - ICCC: no leak, no hops.
+
+| Quantity | Model | JuPedSim, seeds 3–5 (not used for fitting) |
+|---|---|---|
+| Time density first reaches 4 p/m², no control | 670 s | 672 s (665–679) |
+| Seconds above 4, no control | 830 | 828 (821–835) |
+| Peak density, no control | 6.05 | 5.99 |
+| Peak density, route QS (30% link loss) | 3.24 | 3.28 (2.95–3.46) |
+| Seconds above 4, route QS | 0 | 0 |
+| First road hold, route QS | 499 s | 513 s (503–523) |
+| Peak density, ICCC (network up) | 3.06 | 2.91 (2.65–3.39) |
+| First road hold, ICCC | 488 s | 498 s (486–513) |
+
+- **What the model explains.**
+  - **The tipping point.** The compartment's largest steady throughput is max Q = **1.25 p/s**. A normal day (1.2 p/s) sits just under it and stays steady. A surge (4.5 p/s) pushes N past the point where Q starts to fall, and from there the jam feeds itself, because outflow drops as inflow keeps coming.
+  - **Why early holds matter.** The alert has to cut inflow **before** N reaches the falling part of Q(N), not when density reaches 4.
+  - **Why route QS is about 0.3 p/m² above the ICCC.** Route QS holds 11 s later (the leak plus 2 relay hops). In the fluid model that alone accounts for the difference.
+
+**M2: radio loss.**
+- **Effective loss.** With per-direction link loss p, a message gets through only if both directions are up, so q = 1 − (1 − p)². At p = 0.3 that gives q = 51%.
+- **Extra delay.** Each hop is a geometric number of tries at 1 message per second, so the extra delay over h hops is E[Δ] = h·q/(1 − q).
+- **Stale links.** A link is treated as stale (> 5 s silent) with probability q⁶.
+
+| | Model | Measured (300 Monte-Carlo seeds, compartment surge, 3 hops) |
+|---|---|---|
+| Extra road-warning delay at q = 19% | 0.70 s | 0.82 s (p95 3 s) |
+| at q = 51% | 3.12 s | 3.15 s (p95 8 s) |
+| at q = 75% | 9.0 s | 9.74 s (p95 24 s) |
+| P(link stale) at q = 51% | 1.8% | (explains the false node-down reports of the first SIL version) |
+| P(30 s silence) at q = 51% | ≈ 2×10⁻⁹ | 0 false node-down reports with the 30-s rule |
+
+**M3: reliability when boards die.** For the chain compartment → gate → junction → road, with a fraction f of boards dead at random:
+- **No protection:** P(road blind) = 1 − (1 − f)², because the road needs both the junction and the gate.
+- **With the 2-hop backup:** P(road blind) = f², because both must die.
+
+| Boards dead | No protection: model / Monte Carlo | 2-hop backup: model / Monte Carlo |
+|---|---|---|
+| 5% | 9.75% / 9.61% | 0.25% / 0.24% |
+| 10% | 19.0% / 18.97% | **1.0% / 0.99%** |
+| 20% | 36.0% / 36.07% | 4.0% / 3.90% |
+
+(Monte Carlo: 2,000 draws on the 68-compartment route graph.)
+
+**M4: alarm stability.**
+- **Upper bound.** A state can only drop after MIN_DWELL = 5 steps, so each node changes state at most once per 6 s (≤ 600 per hour).
+- **Measured:** worst node in SIL 16.8 per hour; road command in the E3 closed loop 38.9 per hour on average (max 52.8). Mostly WATCH ↔ CRITICAL while the hold rate meters the surge.
+- **False alerts:** on a normal day 0, as predicted (E4). ρ stays below 2.4, so s = ρ/4 < 0.6, and the rate term is off below the 1.5 p/m² floor.
+
+**M5: radio capacity.**
+- **ESP-NOW.** A 25-byte broadcast occupies about 720 µs at 1 Mbit/s. At 1 message per second that loads the channel by 0.7% with 10 boards in range, 3.6% with 50 and 7.2% with 100.
+- **LoRa SF7 / 125 kHz.** One message takes 61.7 ms (Semtech AN1200.13). Under ALOHA (≤ 18% usable) one channel carries **only about 2 boards** sending every second, or about 29 sending every 10 s or on a state change. Design consequence: ESP-NOW for neighbours, LoRa only for long hops, sending on change.
+- **Measured traffic:** 24.4 bytes per board per second in SIL (model 25; the loop runs slightly slower than 1 s).
+
+---
+
+## 3. PS-03
+Lost-person reunification is documented on the `ps-03` branch.
+
+## 4. Prototype
+
+### 4.1 Firmware (`firmware/`, PlatformIO, ESP32 Arduino 2.0.x)
+All three roles compile:
+- **gateway** (node 4, zone C1, USB bridge to the backend);
+- **guardian** (node 2, zone R2; a demo stand-in for a family phone);
+- **tag**.
+
+| Role | Function |
+|---|---|
+| **Node** | 1 s loop: BLE scan; **route-graph QS step** (`include/pk_qs.h`, shared with the SIL harness) with node-failure handling; ESP-NOW broadcast of its 25-byte `RouteMsg` to the nodes that feed it. 60-min buffer of tag sightings; answers search requests; family-device watch (hashed addresses, 10-min buffer); relays desk commands (LOST on/off) as a BLE command beacon. JSON lines over serial (state, action, threat level, diversion, nodes reported down). Serial `CLEARDOWN <node>` lets an operator release a fail-safe hold after checking a dead node. |
+| **Tag** | Rotating HMAC ID + rotating random MAC. Co-walker learning (scores, imprinting, re-link across rotation). Flags SEPARATED / LOST. Faster beacons when flagged. Carries hashes of two learned family devices when flagged. |
+
+**ESP-NOW messages:**
+- route-QS threat `Q` (`RouteMsg`, 25 bytes);
+- sighting `S`;
+- search `F` / hit `H`;
+- watch `W` / family `M`;
+- command `C`;
+- clear-down `D`;
+- simulated density `R`.
+
+**Build** (`pio run`, 31 Oct):
+
+| Role | RAM | Flash |
+|---|---|---|
+| Node (gateway / guardian) | 71.1 KB (21.7%) | 1.53 MB (48.7%) |
+| Tag | 40.3 KB (12.3%) | 1.13 MB (36.1%) |
+
+**Node-failure handling (deployment defaults, §2.8):**
+- **Hold until restored.** A successor that falls silent (> 5 s) while it was alarming keeps its last level until it is heard again, or until an operator sends `CLEARDOWN`.
+- **2-hop backup.** A node also listens to its successors' successors. A backup counts only while the successor in between is silent.
+- **Escalation, "unknown is not safe"** (`failsafeEscalate = true`):
+  - a silent successor that was alarming counts as CRITICAL;
+  - one silent for more than 30 s counts as at least WATCH;
+  - one that is both held and bypassed counts as the larger of the two levels.
+- **Down report.** Staff are told a node is DOWN only after **30 s** of silence. At 51% message loss a 5-s gap happens on about 2% of link-seconds by chance; a 30-s gap is about 10⁻⁹ (§2.10). The first SIL version reported after 5 s and flooded the control room: 108 false reports in a run with no failure. A node that has never been heard (at boot) is never reported down. That was a second bug, found in the same run.
+- **Junction diversion stays safe.** It never diverts into a branch whose board is silent, because its room is unknown. A silent compartment behind a gate reads as "full", not "empty".
+- **Backend.** It logs `NODE DOWN … send staff to check it` once per outage, logs `back in service` when the node returns, and offers `POST /api/v1/nodes/{n}/clear-down`.
+
+**E9: software-in-the-loop (SIL) test of the firmware** (`firmware/sil/sil.cpp`, `sim/esp32_sil.py`).
+- **How the harness works.** It compiles `pk_qs.h`, the exact code that runs on the board, for the PC (zig c++), and runs one virtual ESP32 per route node over a simulated radio. Messages travel as raw bytes, as `esp_now_send` sends them.
+- **Equivalence, lock-step mode.**
+  - 1.000 s loops, no loss: firmware and Python agree in **100% of node-seconds** on 4 traces (compartment surge and blocked: 6 boards × 1,500 s; site surge and blocked: 244 boards × 3,600 s). That is about 1.8 M node-seconds, with nothing different.
+  - **With failure handling on and boards killed:** gate, compartment, both, a site gate and a site compartment, also **100% identical**, with escalation off and on. Getting there needed one fix in the Python model: how a junction treats a silent branch.
+  - **Final re-check, all identical.** After the last change (a held + bypassed successor counts as the larger of the two), the whole suite was re-run on 31 Oct under WSL2 Ubuntu with `g++`. Equivalence: 100% on all 4 traces (about 1.8 M node-seconds). With boards killed: 100% in all 10 cases, escalation off and on. Radio (10 seeds): 0 missed and 0 extra alerts. Node-failure table: unchanged, now with the deployed row.
+- **Realistic radio.** Each board has its own boot time, a loop of 1.005–1.06 s with jitter, 2–15 ms latency and 30% message loss; 10 seeds per trace.
+  - **Alerts:** the firmware missed no alert the Python model raised, and raised none it didn't.
+  - **Timing:** the first METER/HOLD came a median 0 s from Python's, between 2 s earlier and 5 s later.
+  - **Agreement and traffic:** action agreement 99.2–100%; 24.4 bytes per board per second.
+  - **Needless holds:** in the open-loop site surge, both firmware and Python hold about 5,300–5,500 node-s where no place would pass 3.5 p/m². Four gates feed compartments whose density rose fast to 2.98 and stopped. It is an open-loop artefact of the rate term, and is 0 in the closed loop (E8).
+- **Node failure, open loop** (compartment surge, gate or holding-area board killed 60 s after the road was first told to act; 872 s of danger remain):
+
+| Firmware option | Road node acting during the danger |
+|---|---|
+| none (model as in E1–E8) | **0 s**: the road released 4 s after the kill |
+| hold 5 min | ~229 s, then released |
+| hold until restored | **872 s (all)** |
+| 2-hop backup | **872 s (all)** |
+| hold + backup | **872 s (all)** |
+
+(These open-loop SIL runs were made before escalation was added. The closed-loop E10 covers the deployed setting.)
+
+**Gaps:**
+- **Not yet flashed** on the boards.
+- LoRa is stubbed behind the same messages; ESP-NOW only, since there is no LoRa module.
+- The SIL test checks the code and radio timing, not the ESP32 hardware (scan timing, RF, power). That needs the boards (hardware-in-the-loop).
+
+### 4.2 Backend + dashboard (`backend/app.py`, `dashboard/index.html`)
+- **Modes:**
+  - `playback`: replays a simulated scenario, no hardware;
+  - `serial`: reads the gateway over USB;
+  - `hil`: pushes simulated zone densities to the boards and reads back their states.
+- **PS-01 API:**
+  - `/api/v1/zones`;
+  - `/api/v1/alerts`;
+  - `/api/v1/inflow` (OPEN / HOLD / CLOSE);
+  - `/api/v1/nodes/down` and `POST /api/v1/nodes/{n}/clear-down` (dead boards held by the fail-safe; operator release);
+  - WebSocket `/ws`.
+- **PS-03 API:**
+  - `POST /api/v1/bands` (issue with a per-band key);
+  - `POST /api/v1/reports` (desk / IVR / volunteer → search + LOST);
+  - `POST /api/v1/found` (scan → link, notify, clear);
+  - `POST /api/v1/ivr/missed-call`;
+  - `/api/v1/cases`;
+  - auto-flag two-stage escalation (silent watch → auto case after `--confirm-s`, cancelled if the flag stops);
+  - exit-gate watch.
+- **Tests** (`backend/test_app.py`, passing):
+  - band → report → buffer hits → trail, last-seen zone, designated desk → exit watch → found;
+  - per-band IDs don't collide;
+  - auto-flag: silent before confirmation, case + actions after it, cancelled when the flag stops;
+  - node down: reported once per outage, CLEARDOWN sent to the gateway, "back in service" when it reports again.
+- **Dashboard:**
+  - live zone map coloured by density and alert state, with the inflow command;
+  - case panel showing trail, designated desk, family-zone hint, exit warning, auto-flag actions;
+  - report / scan buttons.
+
+### 4.3 Demo plan (`docs/demo_script.md`)
+- **Hardware-in-the-loop:** the simulated surge drives the real boards.
+- **Stop the backend,** and the road board still turns amber via the mesh.
+- **Walk the tag past the nodes,** then report via IVR → trail + designated desk.
+- **Move the guardian board away** → auto-flag case.
+- **Gate counters are simulated.** VL53L1X sensors are an optional add-on.
+
+---
+
+## 5. Engineering and performance work
+
+### 5.1 Vectorisation (logic preserved; verified against a snapshot of the old code)
+| Script | Change | Verification | Speed |
+|---|---|---|---|
+| `ghat_scenario.py` | Speed setter only on category change; numpy box checks instead of shapely; per-id arrays; jam retries capped at 3 failed placements per second | Normal run **bit-identical**; all 5 E3 variants **identical** to the old results | Main gain in jams |
+| `qs_core.py` | Ring-buffer history, vectorised state machine and baselines | **Identical** states on all scenarios and methods | 0.6× at 6 nodes; **1.5× at 30, 2.8× at 100, 3.1× at 300 nodes** |
+| `qs_alert.py` | Parallel E2 seeds / E3 variants, slowest first | Results unchanged | E3: 5 variants in about 77 min |
+| `rimea_tests.py` | numpy box checks; pool removed (crashed on Windows) | **Identical** values | about 4 min (was 339 s) |
+
+Two bugs were found during this work and fixed: JuPedSim agent IDs are a process-wide counter, so per-id arrays must use offsets or grow; and the RiMEA pool crashed (WinError 6).
+
+### 5.2 Reproducibility
+Every parallel task carries its own seed from `np.random.SeedSequence(seed).spawn(k)`, so results don't depend on the number of workers.
+
+### 5.3 Environment issues (dev laptop)
+- Windows Application Control blocks the **pandas** DLL; all scripts use `csv`.
+- On 30 Oct, Code Integrity blocked JuPedSim's `py_jupedsim` DLL for a while (event 3077). By 31 Oct it loaded again, and all JuPedSim runs in this report were done locally. `ghat_scenario` still imports JuPedSim lazily, so everything else runs without it.
+- The C++ compiler for the SIL harness is `ziglang` from pip (`python -m ziglang c++`). There is no other compiler on the laptop.
+- **Smart App Control is on** (`VerifiedAndReputablePolicyState = 1`). It ran the first SIL builds, but at 6:12 AM on 31 Oct it blocked a rebuilt `sil.exe` (Code Integrity event 3077). Every rebuild has a new hash and no reputation. We do not work around the policy. The SIL suite runs unchanged on Linux with `g++`: it was run under WSL2 Ubuntu on the same laptop (Colab or Kaggle also work).
+- About 0.7 GB of free RAM: use at most 3 worker processes. E3 runs each simulation as its own process (resumable).
+
+---
+
+## 6. Risks and open items before submission
+1. **Eligibility of a student team** (Stage 1 "entity registration"). Email innovationchallenge@rtih.co.in; fallback: apply via the institution or its incubator.
+2. **DPDP Rules 2025 Fourth Schedule** wording (Gazette G.S.R. 846(E)).
+3. **Kotilingala model-compartment specs:** re-parameterise the geometry when received.
+4. **Hardware:** flash and range-test the boards (the route-graph QS and failure handling are in the firmware).
+5. **Statistics:** more seeds and scenarios for E3 (5 seeds of one surge so far).
+6. **LoRa duty:** at SF7 one channel carries only about 2 long-hop boards sending every second (§2.10 M5). Long hops must send on state change or every 10 s (about 29 boards per channel).
+7. **Unverified citations (⚠):** IMO MSC.1/Circ.1533 number; the IIT Madras PRL paper; Legion's owner; Fisheye State Routing and TAG (if cited).
+8. **Android BLE advertising prevalence:** a pilot KPI.
+
+---
+
+## 7. Reproduction
+```
+cd pushkaralu\sim
+..\.venv\Scripts\python.exe rimea_tests.py
+..\.venv\Scripts\python.exe calibrate.py --reselect
+..\.venv\Scripts\python.exe qs_alert.py --experiment e1 e2 e4 e5
+..\.venv\Scripts\python.exe qs_alert.py --experiment e3 --e3-seeds 1 2 3 4 5 --workers 3          # E3, JuPedSim
+..\.venv\Scripts\python.exe qs_alert.py --experiment e3 --e3-seeds 1 2 3 --e3-variants 8 9 10 11  # dead board
+..\.venv\Scripts\python.exe qs_alert.py --experiment e3 --e3-seeds 1 2 3 4 5 --e3-variants 6 7    # hybrid
+..\.venv\Scripts\python.exe site_experiment.py --workers 2 --seeds 0 1 2 ... 19    # E8, 20 draws
+..\.venv\Scripts\python.exe failure_experiment.py --workers 2                     # E10
+..\.venv\Scripts\python.exe esp32_sil.py                                          # E9 (pip install ziglang)
+..\.venv\Scripts\python.exe analytic_model.py                                     # E11
+..\.venv\Scripts\python.exe test_route_graph.py
+cd ..\backend
+..\.venv\Scripts\python.exe test_app.py
+..\.venv\Scripts\python.exe app.py --mode playback --scenario surge
+cd ..\firmware
+..\.venv\Scripts\pio.exe run
+```
+
+## 8. File map
+| Path | Content |
+|---|---|
+| `sim/ghat_scenario.py` | JuPedSim compartment model (closed loop capable) |
+| `sim/rimea_tests.py`, `sim/calibrate.py` | Verification and calibration |
+| `sim/qs_core.py` | Threshold, centralised, gradient/Laplacian QS, **RouteQSNetwork** |
+| `sim/route_graph.py`, `sim/test_route_graph.py` | Route graph, compartment + synthetic site, unit tests |
+| `sim/qs_alert.py` | E1–E5 (compartment scale) |
+| `sim/site_flow.py`, `sim/site_experiment.py` | Site-scale flow model, E8 (incl. failures, fail-safe, hybrid) |
+| `sim/failure_experiment.py` | E10: board failures at critical places, site scale |
+| `sim/esp32_sil.py`, `firmware/sil/sil.cpp` | E9: software-in-the-loop test of the firmware |
+| `sim/analytic_model.py` | E11: mathematical model vs simulation |
+| `firmware/include/pk_qs.h` | Route-graph QS + failure handling, shared by firmware and SIL |
+| `backend/`, `dashboard/`, `firmware/` | Prototype |
+| `docs/demo_script.md` | Demo |
+| `literature_survey.md`, `references.bib` | Literature |
+
+## 9. Key references (full list in `references.bib`)
+Helbing 2007 · Johansson 2008 · Weidmann 1993 · Seyfried 2005 · Still 2000/2014 · Fruin 1971 · Illiyas 2013 · Vanumu 2020 · Feliciani 2023 · Boyd 2006 · Olfati-Saber 2007 · Cattivelli 2010 · Pratt 2002 · Dressler & Akan 2010 · Wokoma 2004 · Bor 2016 · Adelantado 2017 · Nikodem 2019 · Rondon 2020 · Leith & Farrell 2020 · Januszkiewicz 2018 · Cotton 2011 · Basalamah 2016 · Troncoso 2020 (DP-3T) · Heinrich 2021/2022 · DPDP Act 2023 · NDMA crowd guide 2014 · RiMEA guideline · ISO 20414:2020 · NIST TN 1822 · Moussaïd 2010 · Group-In (arXiv 2005.12848) · Solmaz & Wu (arXiv 1808.01023).

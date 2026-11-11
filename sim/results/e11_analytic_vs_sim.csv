@@ -1,0 +1,34 @@
+model,quantity,predicted,measured,measured_by
+M1 fluid,"peak density, no control",6.05,5.99 (range 5.94-6.02),JuPedSim E3 seeds 3-5 (not used for fitting)
+M1 fluid,"seconds above 4 p/m2, no control",830,828 (range 821-835),JuPedSim E3 seeds 3-5
+M1 fluid,"time density first reaches 4 p/m2, no control (s)",670,672 (range 665-679),JuPedSim E3 seeds 3-5
+M1 fluid,"peak density, route QS (30% link loss)",3.24,3.28 (range 2.95-3.46),JuPedSim E3 seeds 3-5 (not used for fitting)
+M1 fluid,"seconds above 4 p/m2, route QS (30% link loss)",0,0 (range 0-0),JuPedSim E3 seeds 3-5
+M1 fluid,"first road hold (s), route QS (30% link loss)",499,513 (range 503-523),JuPedSim E3 seeds 3-5
+M1 fluid,"peak density, ICCC, network up",3.06,2.91 (range 2.65-3.39),JuPedSim E3 seeds 3-5 (not used for fitting)
+M1 fluid,"seconds above 4 p/m2, ICCC, network up",0,0 (range 0-0),JuPedSim E3 seeds 3-5
+M1 fluid,"first road hold (s), ICCC, network up",488,498 (range 486-513),JuPedSim E3 seeds 3-5
+M1 fluid,max sustainable arrival rate (p/s) = max Q(N),1.25,1.2 p/s normal day stays steady; 4.5 p/s surge runs away,JuPedSim normal / surge scenarios
+M2 radio,"extra road-warning delay, link loss 10% (effective message loss 19%), mean s",0.7,"0.82 (p95 3, max 7)","Monte Carlo, Python model, 300 seeds"
+M2 radio,"P(link stale > 5 s), effective loss 19%",4.70e-05,,
+M2 radio,"extra road-warning delay, link loss 30% (effective message loss 51%), mean s",3.12,"3.15 (p95 8, max 12)","Monte Carlo, Python model, 300 seeds"
+M2 radio,"P(link stale > 5 s), effective loss 51%",1.76e-02,,
+M2 radio,"extra road-warning delay, link loss 50% (effective message loss 75%), mean s",9.0,"9.74 (p95 24, max 45)","Monte Carlo, Python model, 300 seeds"
+M2 radio,"P(link stale > 5 s), effective loss 75%",1.78e-01,,
+M2 radio,"firmware: first-action delay vs lock-step model, 30% message loss, async boards (s)","+1.29 from losses, minus up to 3 s (boards forward within ms, not at the next 1-s tick)","median 0.0, range -2.0 to +2.0","SIL E9, 10 seeds"
+M3 reliability,"P(road blind to its compartment), 5% boards dead, no protection",0.0975,0.0961,"Monte Carlo on the 68-compartment route graph, 2000 draws"
+M3 reliability,"P(road blind to its compartment), 5% boards dead, 2-hop backup",0.0025,0.0024,"Monte Carlo on the 68-compartment route graph, 2000 draws"
+M3 reliability,"P(road blind to its compartment), 10% boards dead, no protection",0.19,0.1897,"Monte Carlo on the 68-compartment route graph, 2000 draws"
+M3 reliability,"P(road blind to its compartment), 10% boards dead, 2-hop backup",0.01,0.0099,"Monte Carlo on the 68-compartment route graph, 2000 draws"
+M3 reliability,"P(road blind to its compartment), 20% boards dead, no protection",0.36,0.3607,"Monte Carlo on the 68-compartment route graph, 2000 draws"
+M3 reliability,"P(road blind to its compartment), 20% boards dead, 2-hop backup",0.04,0.039,"Monte Carlo on the 68-compartment route graph, 2000 draws"
+M4 stability,alert state changes per node-hour (upper bound vs worst node seen),<= 600,16.8,"SIL E9 logs, every node, last radio seed of each trace"
+M4 stability,"road command changes per hour, route QS closed loop",<= 600,38.9 (max 52.8),"JuPedSim E3, 5 seeds"
+M4 stability,false alerts per hour on a normal day (route QS),0 (s = rho/4 < 0.6 while rho < 2.4 and below the rate floor),"WATCH 0.0, CRITICAL 0.0","E4, normal scenario"
+M5 capacity,"ESP-NOW channel busy, 10 boards in range, 1 msg/s",0.7%,,
+M5 capacity,"ESP-NOW channel busy, 50 boards in range, 1 msg/s",3.6%,,
+M5 capacity,"ESP-NOW channel busy, 100 boards in range, 1 msg/s",7.2%,,
+M5 capacity,LoRa SF7/125 kHz airtime per 25-byte message (ms),61.7,,
+M5 capacity,LoRa long-hop boards per channel at 1 msg/s (ALOHA 18%),2,,
+M5 capacity,"LoRa long-hop boards per channel, 1 msg per 10 s or on state change",29,,
+M5 capacity,bytes per board per second,25.0,24.4,SIL E9 (loop period slightly over 1 s)

@@ -1,0 +1,145 @@
+scenario,failure,option,draws,draws_safe_everywhere,s_above_4_mean,s_above_4_max,peak_max,needless_pct_mean,exited_mean,nodes_reporting_down_mean
+site-surge,compartment | at first alert,none,5,0,1633.4,1782,4.85,0.0,193365,0.0
+site-surge,compartment | at first alert,hold,5,3,528.6,1366,4.85,0.0,193290,0.0
+site-surge,compartment | at first alert,backup,5,3,489.6,1380,4.85,0.0,193109,1.0
+site-surge,compartment | at first alert,both,5,3,459.2,1290,4.85,0.0,193055,1.0
+site-surge,compartment | at first alert,both+escalate,5,5,0.0,0,3.57,0.0,190530,2.0
+site-surge,compartment | at first alert,centralised,5,5,0.0,0,2.29,0.0,190284,0.0
+site-surge,gate | 2 min before,none,5,0,1687.0,1877,4.85,0.0,193577,0.0
+site-surge,gate | 2 min before,hold,5,3,558.0,1412,4.85,0.0,193721,0.0
+site-surge,gate | 2 min before,backup,5,5,0.0,0,3.57,0.0,192477,1.0
+site-surge,gate | 2 min before,both,5,5,0.0,0,3.57,0.0,192314,1.0
+site-surge,gate | 2 min before,both+escalate,5,5,0.0,0,3.57,0.0,192171,2.0
+site-surge,gate | 2 min before,centralised,5,5,0.0,0,2.31,0.0,190261,0.0
+site-surge,gate | 5 min after,none,5,2,644.0,1331,4.85,0.0,193865,0.0
+site-surge,gate | 5 min after,hold,5,4,5.2,26,4.0,0.0,192748,0.6
+site-surge,gate | 5 min after,backup,5,5,0.0,0,3.57,0.0,192407,1.0
+site-surge,gate | 5 min after,both,5,5,0.0,0,3.57,0.0,192205,1.2
+site-surge,gate | 5 min after,both+escalate,5,5,0.0,0,3.57,0.0,192199,2.0
+site-surge,gate | 5 min after,centralised,5,5,0.0,0,2.29,0.0,190179,0.0
+site-surge,gate | at first alert,none,5,1,886.2,1524,4.85,0.0,193850,0.0
+site-surge,gate | at first alert,hold,5,3,558.6,1412,4.85,0.0,193750,0.0
+site-surge,gate | at first alert,backup,5,5,0.0,0,3.57,0.0,192451,1.0
+site-surge,gate | at first alert,both,5,5,0.0,0,3.57,0.0,192301,1.0
+site-surge,gate | at first alert,both+escalate,5,5,0.0,0,3.57,0.0,192135,2.0
+site-surge,gate | at first alert,centralised,5,5,0.0,0,2.31,0.0,190261,0.0
+site-surge,gate+junction | at first alert,none,5,0,1742.4,1877,4.85,8.2,193786,0.0
+site-surge,gate+junction | at first alert,hold,5,0,1684.6,1870,4.85,11.5,194705,0.0
+site-surge,gate+junction | at first alert,backup,5,3,663.6,1723,4.85,3.3,194203,1.0
+site-surge,gate+junction | at first alert,both,5,3,663.6,1723,4.85,2.6,194131,1.0
+site-surge,gate+junction | at first alert,both+escalate,5,3,661.0,1710,4.85,0.0,193548,5.0
+site-surge,gate+junction | at first alert,centralised,5,5,0.0,0,3.88,0.0,174255,0.0
+site-surge,junction | 2 min before,none,5,0,1040.4,1458,4.22,6.2,194046,0.0
+site-surge,junction | 2 min before,hold,5,0,827.4,1456,4.28,10.2,194871,0.0
+site-surge,junction | 2 min before,backup,5,5,0.0,0,3.57,0.0,191982,1.0
+site-surge,junction | 2 min before,both,5,5,0.0,0,3.57,0.0,191927,1.0
+site-surge,junction | 2 min before,both+escalate,5,5,0.0,0,3.57,0.0,191763,4.0
+site-surge,junction | 2 min before,centralised,5,5,0.0,0,3.88,0.0,174042,0.0
+site-surge,junction | 5 min after,none,5,0,856.6,1328,4.21,5.1,193872,0.0
+site-surge,junction | 5 min after,hold,5,3,182.0,741,4.27,0.0,193738,2.2
+site-surge,junction | 5 min after,backup,5,5,0.0,0,3.57,0.0,191982,1.0
+site-surge,junction | 5 min after,both,5,5,0.0,0,3.57,0.0,191075,2.0
+site-surge,junction | 5 min after,both+escalate,5,5,0.0,0,3.57,0.0,190368,4.0
+site-surge,junction | 5 min after,centralised,5,1,1421.0,1879,4.06,0.0,165428,0.0
+site-surge,junction | at first alert,none,5,0,1041.4,1458,4.22,6.2,194030,0.0
+site-surge,junction | at first alert,hold,5,0,827.4,1456,4.28,10.2,194871,0.0
+site-surge,junction | at first alert,backup,5,5,0.0,0,3.57,0.0,191994,1.0
+site-surge,junction | at first alert,both,5,5,0.0,0,3.57,0.0,191930,1.0
+site-surge,junction | at first alert,both+escalate,5,5,0.0,0,3.57,0.0,191787,4.0
+site-surge,junction | at first alert,centralised,5,5,0.0,0,3.88,0.0,174094,0.0
+site-surge,random 10% | at first alert,none,5,3,613.8,1701,4.85,0.0,194548,0.0
+site-surge,random 10% | at first alert,hold,5,3,509.4,1370,4.85,0.0,194502,0.0
+site-surge,random 10% | at first alert,backup,5,4,274.4,1372,4.85,0.0,193475,13.2
+site-surge,random 10% | at first alert,both,5,4,274.0,1370,4.85,0.0,193420,13.2
+site-surge,random 10% | at first alert,both+escalate,5,4,191.8,959,4.34,73.3,190733,44.8
+site-surge,random 10% | at first alert,centralised,5,4,362.2,1811,5.03,0.0,186102,0.0
+site-surge,random 20% | at first alert,none,5,1,1336.4,1870,4.85,0.0,194446,0.0
+site-surge,random 20% | at first alert,hold,5,2,993.2,1694,4.85,0.0,194654,0.0
+site-surge,random 20% | at first alert,backup,5,2,825.6,1615,4.85,0.0,193753,21.0
+site-surge,random 20% | at first alert,both,5,2,814.0,1615,4.85,0.0,193721,21.0
+site-surge,random 20% | at first alert,both+escalate,5,4,72.4,362,4.55,81.9,184924,83.2
+site-surge,random 20% | at first alert,centralised,5,4,397.6,1988,5.03,0.0,177893,0.0
+site-surge,random 5% | at first alert,none,5,2,909.6,1723,4.85,0.0,194278,0.0
+site-surge,random 5% | at first alert,hold,5,2,770.8,1366,4.85,0.0,194112,0.0
+site-surge,random 5% | at first alert,backup,5,3,537.6,1354,4.85,0.0,193482,6.0
+site-surge,random 5% | at first alert,both,5,3,509.6,1349,4.85,0.0,193441,6.0
+site-surge,random 5% | at first alert,both+escalate,5,5,0.0,0,3.57,58.5,188674,20.0
+site-surge,random 5% | at first alert,centralised,5,4,345.6,1728,5.03,0.0,185601,0.0
+site-surge,road | at first alert,none,5,0,816.2,1463,4.28,8.6,194924,0.0
+site-surge,road | at first alert,hold,5,0,856.4,1478,4.29,8.6,194878,0.0
+site-surge,road | at first alert,backup,5,4,153.0,765,4.26,0.0,192877,1.0
+site-surge,road | at first alert,both,5,4,165.2,826,4.26,0.0,192837,1.0
+site-surge,road | at first alert,both+escalate,5,4,107.8,539,4.25,0.0,191325,3.0
+site-surge,road | at first alert,centralised,5,0,1854.2,1988,5.03,0.0,163110,0.0
+site-blocked,compartment | at first alert,none,4,2,93.2,311,4.48,0.0,152493,0.0
+site-blocked,compartment | at first alert,hold,4,2,93.2,311,4.48,0.0,152493,0.0
+site-blocked,compartment | at first alert,backup,4,2,93.2,311,4.48,0.0,152493,1.0
+site-blocked,compartment | at first alert,both,4,2,93.2,311,4.48,0.0,152493,1.0
+site-blocked,compartment | at first alert,both+escalate,4,4,0.0,0,2.38,50.0,153067,2.0
+site-blocked,compartment | at first alert,centralised,4,2,93.0,310,4.48,50.0,152486,0.0
+site-blocked,gate | 2 min before,none,4,2,93.2,311,4.48,0.0,152493,0.0
+site-blocked,gate | 2 min before,hold,4,2,93.2,311,4.48,0.0,152493,0.0
+site-blocked,gate | 2 min before,backup,4,4,0.0,0,2.42,0.0,152990,1.0
+site-blocked,gate | 2 min before,both,4,4,0.0,0,2.42,0.0,152990,1.0
+site-blocked,gate | 2 min before,both+escalate,4,4,0.0,0,2.27,0.0,153162,2.0
+site-blocked,gate | 2 min before,centralised,4,4,0.0,0,3.38,50.0,151153,0.0
+site-blocked,gate | 5 min after,none,4,3,14.5,58,4.09,50.0,152648,0.0
+site-blocked,gate | 5 min after,hold,4,4,0.0,0,2.42,50.0,153032,2.0
+site-blocked,gate | 5 min after,backup,4,4,0.0,0,2.42,50.0,152989,1.0
+site-blocked,gate | 5 min after,both,4,4,0.0,0,2.42,50.0,153031,2.0
+site-blocked,gate | 5 min after,both+escalate,4,4,0.0,0,2.42,50.0,153032,2.0
+site-blocked,gate | 5 min after,centralised,4,4,0.0,0,3.38,50.0,151153,0.0
+site-blocked,gate | at first alert,none,4,2,93.2,311,4.48,0.0,152493,0.0
+site-blocked,gate | at first alert,hold,4,2,93.2,311,4.48,0.0,152493,0.0
+site-blocked,gate | at first alert,backup,4,4,0.0,0,2.42,0.0,152989,1.0
+site-blocked,gate | at first alert,both,4,4,0.0,0,2.42,0.0,152989,1.0
+site-blocked,gate | at first alert,both+escalate,4,4,0.0,0,2.36,0.0,153086,2.0
+site-blocked,gate | at first alert,centralised,4,4,0.0,0,3.38,50.0,151153,0.0
+site-blocked,gate+junction | at first alert,none,4,2,93.2,311,4.48,0.0,152493,0.0
+site-blocked,gate+junction | at first alert,hold,4,2,93.2,311,4.48,0.0,152493,0.0
+site-blocked,gate+junction | at first alert,backup,4,2,93.2,311,4.48,0.0,152493,1.0
+site-blocked,gate+junction | at first alert,both,4,2,93.2,311,4.48,0.0,152493,1.0
+site-blocked,gate+junction | at first alert,both+escalate,4,4,0.0,0,2.42,0.0,153036,5.5
+site-blocked,gate+junction | at first alert,centralised,4,4,0.0,0,3.42,50.0,151182,0.0
+site-blocked,junction | 2 min before,none,4,3,35.5,142,4.59,50.0,152493,0.0
+site-blocked,junction | 2 min before,hold,4,2,55.0,209,5.01,50.0,152493,0.0
+site-blocked,junction | 2 min before,backup,4,4,0.0,0,2.45,50.0,152981,1.0
+site-blocked,junction | 2 min before,both,4,4,0.0,0,2.44,50.0,152984,1.0
+site-blocked,junction | 2 min before,both+escalate,4,4,0.0,0,2.29,0.0,153125,4.5
+site-blocked,junction | 2 min before,centralised,4,4,0.0,0,3.4,50.0,151186,0.0
+site-blocked,junction | 5 min after,none,4,4,0.0,0,3.77,50.0,152648,0.0
+site-blocked,junction | 5 min after,hold,4,4,0.0,0,3.73,50.0,152651,1.0
+site-blocked,junction | 5 min after,backup,4,4,0.0,0,2.44,50.0,152982,1.0
+site-blocked,junction | 5 min after,both,4,4,0.0,0,2.44,50.0,152982,2.0
+site-blocked,junction | 5 min after,both+escalate,4,4,0.0,0,2.44,50.0,153006,4.5
+site-blocked,junction | 5 min after,centralised,4,4,0.0,0,3.4,50.0,151179,0.0
+site-blocked,junction | at first alert,none,4,3,35.5,142,4.59,50.0,152493,0.0
+site-blocked,junction | at first alert,hold,4,2,55.0,209,5.01,50.0,152493,0.0
+site-blocked,junction | at first alert,backup,4,4,0.0,0,2.45,50.0,152982,1.0
+site-blocked,junction | at first alert,both,4,4,0.0,0,2.44,50.0,152984,1.0
+site-blocked,junction | at first alert,both+escalate,4,4,0.0,0,2.38,50.0,153054,4.5
+site-blocked,junction | at first alert,centralised,4,4,0.0,0,3.4,50.0,151186,0.0
+site-blocked,random 10% | at first alert,none,4,4,0.0,0,2.43,50.0,152986,0.0
+site-blocked,random 10% | at first alert,hold,4,4,0.0,0,2.42,50.0,152988,0.0
+site-blocked,random 10% | at first alert,backup,4,4,0.0,0,2.42,50.0,152988,13.8
+site-blocked,random 10% | at first alert,both,4,4,0.0,0,2.42,50.0,152988,13.8
+site-blocked,random 10% | at first alert,both+escalate,4,4,0.0,0,2.95,95.7,151990,46.0
+site-blocked,random 10% | at first alert,centralised,4,4,0.0,0,3.37,50.0,151157,0.0
+site-blocked,random 20% | at first alert,none,4,4,0.0,0,3.22,50.0,152917,0.0
+site-blocked,random 20% | at first alert,hold,4,4,0.0,0,3.22,50.0,152918,0.0
+site-blocked,random 20% | at first alert,backup,4,4,0.0,0,3.22,50.0,152918,19.2
+site-blocked,random 20% | at first alert,both,4,4,0.0,0,3.22,50.0,152918,19.2
+site-blocked,random 20% | at first alert,both+escalate,4,4,0.0,0,3.29,95.8,150428,81.8
+site-blocked,random 20% | at first alert,centralised,4,4,0.0,0,3.81,50.0,151777,0.0
+site-blocked,random 5% | at first alert,none,4,4,0.0,0,2.7,25.0,152972,0.0
+site-blocked,random 5% | at first alert,hold,4,4,0.0,0,2.7,25.0,152974,0.0
+site-blocked,random 5% | at first alert,backup,4,4,0.0,0,2.42,25.0,152988,6.2
+site-blocked,random 5% | at first alert,both,4,4,0.0,0,2.42,25.0,152988,6.2
+site-blocked,random 5% | at first alert,both+escalate,4,4,0.0,0,2.42,94.4,152184,20.0
+site-blocked,random 5% | at first alert,centralised,4,4,0.0,0,3.37,50.0,151157,0.0
+site-blocked,road | at first alert,none,4,4,0.0,0,2.43,50.0,152986,0.0
+site-blocked,road | at first alert,hold,4,4,0.0,0,2.42,50.0,152988,0.0
+site-blocked,road | at first alert,backup,4,4,0.0,0,2.43,50.0,152988,1.0
+site-blocked,road | at first alert,both,4,4,0.0,0,2.42,50.0,152988,1.0
+site-blocked,road | at first alert,both+escalate,4,4,0.0,0,2.42,50.0,152143,3.0
+site-blocked,road | at first alert,centralised,4,4,0.0,0,3.48,50.0,151590,0.0

@@ -1,0 +1,37 @@
+victim,firmware_option,seed,killed_at_s,danger_s_after_kill,road_acting_s_during_danger,road_released_at_s
+G,none,1,557,872,0,561
+G,none,2,557,872,0,561
+G,none,3,557,872,0,561
+G,hold 5 min,1,557,872,229,857
+G,hold 5 min,2,557,872,228,856
+G,hold 5 min,3,557,872,228,856
+G,hold until restored,1,557,872,872,
+G,hold until restored,2,557,872,872,
+G,hold until restored,3,557,872,872,
+G,2-hop backup,1,557,872,872,
+G,2-hop backup,2,557,872,872,
+G,2-hop backup,3,557,872,872,
+G,2-hop backup + hold until restored,1,557,872,872,
+G,2-hop backup + hold until restored,2,557,872,872,
+G,2-hop backup + hold until restored,3,557,872,872,
+G,2-hop backup + hold + escalate (deployed),1,557,872,872,
+G,2-hop backup + hold + escalate (deployed),2,557,872,872,
+G,2-hop backup + hold + escalate (deployed),3,557,872,872,
+C1,none,1,557,872,0,560
+C1,none,2,557,872,0,560
+C1,none,3,557,872,0,563
+C1,hold 5 min,1,557,872,227,855
+C1,hold 5 min,2,557,872,231,859
+C1,hold 5 min,3,557,872,229,857
+C1,hold until restored,1,557,872,872,
+C1,hold until restored,2,557,872,872,
+C1,hold until restored,3,557,872,872,
+C1,2-hop backup,1,557,872,872,
+C1,2-hop backup,2,557,872,872,
+C1,2-hop backup,3,557,872,872,
+C1,2-hop backup + hold until restored,1,557,872,872,
+C1,2-hop backup + hold until restored,2,557,872,872,
+C1,2-hop backup + hold until restored,3,557,872,872,
+C1,2-hop backup + hold + escalate (deployed),1,557,872,872,
+C1,2-hop backup + hold + escalate (deployed),2,557,872,872,
+C1,2-hop backup + hold + escalate (deployed),3,557,872,872,

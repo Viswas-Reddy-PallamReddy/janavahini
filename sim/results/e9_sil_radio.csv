@@ -1,0 +1,81 @@
+trace,config,seed,nodes_acting_python,nodes_acting_firmware,missed_by_firmware,extra_in_firmware,first_act_delay_median_s,first_act_delay_max_s,first_act_delay_min_s,action_agreement_pct,needless_acting_node_s,needless_acting_node_s_python,msgs_per_node_s,loss_measured_pct,bytes_per_node_s
+compartment-surge,as modelled,1,5,5,0,0,0.0,1.0,-1.0,98.61,0,0,0.977,29.3,24.4
+compartment-surge,as modelled,2,5,5,0,0,0.0,0.0,-1.0,99.2,0,0,0.971,29.5,24.3
+compartment-surge,as modelled,3,5,5,0,0,0.0,0.0,-1.0,98.06,0,0,0.967,30.0,24.2
+compartment-surge,as modelled,4,5,5,0,0,-1.0,1.0,-2.0,99.63,0,0,0.959,29.9,24.0
+compartment-surge,as modelled,5,5,5,0,0,-1.0,1.0,-2.0,99.82,0,0,0.978,29.1,24.5
+compartment-surge,as modelled,6,5,5,0,0,-1.0,1.0,-1.0,98.5,0,0,0.973,29.4,24.3
+compartment-surge,as modelled,7,5,5,0,0,1.0,2.0,0.0,99.72,0,0,0.97,30.5,24.3
+compartment-surge,as modelled,8,5,5,0,0,0.0,1.0,-1.0,99.4,0,0,0.967,30.4,24.2
+compartment-surge,as modelled,9,5,5,0,0,-1.0,0.0,-2.0,99.04,0,0,0.963,30.7,24.1
+compartment-surge,as modelled,10,5,5,0,0,2.0,2.0,-1.0,99.74,0,0,0.979,30.1,24.5
+compartment-surge,with failure handling (deployed),1,5,5,0,0,0.0,0.0,-1.0,99.72,0,0,0.977,30.0,24.4
+compartment-surge,with failure handling (deployed),2,5,5,0,0,0.0,0.0,-1.0,99.28,0,0,0.971,30.1,24.3
+compartment-surge,with failure handling (deployed),3,5,5,0,0,0.0,2.0,-1.0,99.78,0,0,0.967,30.0,24.2
+compartment-surge,with failure handling (deployed),4,5,5,0,0,-1.0,2.0,-2.0,98.68,0,0,0.959,30.7,24.0
+compartment-surge,with failure handling (deployed),5,5,5,0,0,0.0,1.0,0.0,99.81,0,0,0.978,29.9,24.5
+compartment-surge,with failure handling (deployed),6,5,5,0,0,2.0,3.0,0.0,99.78,0,0,0.973,30.1,24.3
+compartment-surge,with failure handling (deployed),7,5,5,0,0,1.0,2.0,0.0,99.79,0,0,0.97,30.2,24.3
+compartment-surge,with failure handling (deployed),8,5,5,0,0,2.0,2.0,2.0,99.46,0,0,0.967,30.4,24.2
+compartment-surge,with failure handling (deployed),9,5,5,0,0,0.0,1.0,0.0,99.79,0,0,0.963,30.6,24.1
+compartment-surge,with failure handling (deployed),10,5,5,0,0,1.0,2.0,-1.0,99.92,0,0,0.979,29.9,24.5
+compartment-blocked,as modelled,1,5,5,0,0,-1.0,0.0,-1.0,99.47,0,0,0.977,29.3,24.4
+compartment-blocked,as modelled,2,5,5,0,0,1.0,4.0,0.0,99.28,0,0,0.971,29.5,24.3
+compartment-blocked,as modelled,3,5,5,0,0,1.0,1.0,0.0,99.22,0,0,0.967,30.0,24.2
+compartment-blocked,as modelled,4,5,5,0,0,0.0,1.0,0.0,99.16,0,0,0.959,29.9,24.0
+compartment-blocked,as modelled,5,5,5,0,0,1.0,1.0,1.0,99.46,0,0,0.978,29.1,24.5
+compartment-blocked,as modelled,6,5,5,0,0,1.0,1.0,0.0,99.53,0,0,0.973,29.4,24.3
+compartment-blocked,as modelled,7,5,5,0,0,0.0,2.0,0.0,99.57,0,0,0.97,30.5,24.3
+compartment-blocked,as modelled,8,5,5,0,0,0.0,3.0,-1.0,98.91,0,0,0.967,30.4,24.2
+compartment-blocked,as modelled,9,5,5,0,0,-1.0,-1.0,-2.0,98.68,0,0,0.963,30.7,24.1
+compartment-blocked,as modelled,10,5,5,0,0,-1.0,0.0,-1.0,99.66,0,0,0.979,30.1,24.5
+compartment-blocked,with failure handling (deployed),1,5,5,0,0,0.0,5.0,-1.0,99.86,0,0,0.977,30.0,24.4
+compartment-blocked,with failure handling (deployed),2,5,5,0,0,1.0,2.0,1.0,99.87,0,0,0.971,30.1,24.3
+compartment-blocked,with failure handling (deployed),3,5,5,0,0,-1.0,-1.0,-3.0,99.9,0,0,0.967,30.0,24.2
+compartment-blocked,with failure handling (deployed),4,5,5,0,0,2.0,2.0,1.0,99.71,0,0,0.959,30.7,24.0
+compartment-blocked,with failure handling (deployed),5,5,5,0,0,-1.0,1.0,-1.0,99.84,0,0,0.978,29.9,24.5
+compartment-blocked,with failure handling (deployed),6,5,5,0,0,0.0,1.0,0.0,99.97,0,0,0.973,30.1,24.3
+compartment-blocked,with failure handling (deployed),7,5,5,0,0,0.0,1.0,0.0,99.98,0,0,0.97,30.2,24.3
+compartment-blocked,with failure handling (deployed),8,5,5,0,0,-1.0,1.0,-2.0,99.93,0,0,0.967,30.4,24.2
+compartment-blocked,with failure handling (deployed),9,5,5,0,0,-1.0,1.0,-2.0,99.91,0,0,0.963,30.6,24.1
+compartment-blocked,with failure handling (deployed),10,5,5,0,0,-2.0,0.0,-3.0,99.88,0,0,0.979,29.9,24.5
+site-surge,as modelled,1,11,11,0,0,0.0,2.0,-1.0,99.9,5247,5515,0.97,30.0,24.2
+site-surge,as modelled,2,11,11,0,0,1.0,3.0,-1.0,99.93,5390,5515,0.969,30.0,24.2
+site-surge,as modelled,3,11,11,0,0,0.0,5.0,-1.0,99.92,5372,5515,0.969,29.9,24.2
+site-surge,as modelled,4,11,11,0,0,0.0,1.0,-2.0,99.93,5366,5515,0.97,30.0,24.2
+site-surge,as modelled,5,11,11,0,0,0.0,2.0,-1.0,99.89,5252,5515,0.969,30.0,24.2
+site-surge,as modelled,6,11,11,0,0,1.0,2.0,-1.0,99.9,5161,5515,0.97,30.0,24.2
+site-surge,as modelled,7,11,11,0,0,1.0,2.0,-1.0,99.89,5222,5515,0.969,30.1,24.2
+site-surge,as modelled,8,11,11,0,0,1.0,1.0,0.0,99.88,5140,5515,0.969,30.0,24.2
+site-surge,as modelled,9,11,11,0,0,0.0,2.0,-1.0,99.94,5392,5515,0.969,30.0,24.2
+site-surge,as modelled,10,11,11,0,0,0.0,2.0,-1.0,99.9,5343,5515,0.968,30.1,24.2
+site-surge,with failure handling (deployed),1,11,11,0,0,0.0,4.0,-1.0,99.97,5504,5515,0.97,30.1,24.2
+site-surge,with failure handling (deployed),2,11,11,0,0,0.0,4.0,-38.0,99.96,5376,5515,0.969,30.0,24.2
+site-surge,with failure handling (deployed),3,11,11,0,0,0.0,1.0,-1.0,99.95,5162,5515,0.969,29.9,24.2
+site-surge,with failure handling (deployed),4,11,11,0,0,0.0,2.0,-31.0,99.93,5401,5515,0.97,30.0,24.2
+site-surge,with failure handling (deployed),5,11,11,0,0,0.0,2.0,-1.0,99.97,5514,5515,0.969,30.0,24.2
+site-surge,with failure handling (deployed),6,11,11,0,0,0.0,1.0,-1.0,99.96,5273,5515,0.97,30.1,24.2
+site-surge,with failure handling (deployed),7,11,11,0,0,-1.0,0.0,-2.0,99.98,5405,5515,0.969,30.0,24.2
+site-surge,with failure handling (deployed),8,11,11,0,0,1.0,1.0,-1.0,99.96,5339,5515,0.969,30.0,24.2
+site-surge,with failure handling (deployed),9,11,11,0,0,0.0,3.0,-110.0,99.93,5325,5515,0.969,30.0,24.2
+site-surge,with failure handling (deployed),10,11,11,0,0,0.0,1.0,-2.0,99.97,5494,5515,0.968,30.0,24.2
+site-blocked,as modelled,1,2,2,0,0,0.5,1.0,0.0,100.0,0,0,0.97,30.0,24.2
+site-blocked,as modelled,2,2,2,0,0,-0.5,0.0,-1.0,100.0,0,0,0.969,30.0,24.2
+site-blocked,as modelled,3,2,2,0,0,-3.0,-3.0,-3.0,100.0,0,0,0.969,29.9,24.2
+site-blocked,as modelled,4,2,2,0,0,0.5,1.0,0.0,100.0,0,0,0.97,30.0,24.2
+site-blocked,as modelled,5,2,2,0,0,1.5,2.0,1.0,100.0,0,0,0.969,30.0,24.2
+site-blocked,as modelled,6,2,2,0,0,-0.5,0.0,-1.0,100.0,0,0,0.97,30.0,24.2
+site-blocked,as modelled,7,2,2,0,0,1.0,1.0,1.0,100.0,0,0,0.969,30.1,24.2
+site-blocked,as modelled,8,2,2,0,0,2.0,3.0,1.0,100.0,0,0,0.969,30.0,24.2
+site-blocked,as modelled,9,2,2,0,0,0.5,1.0,0.0,100.0,0,0,0.969,30.0,24.2
+site-blocked,as modelled,10,2,2,0,0,-0.5,0.0,-1.0,100.0,0,0,0.968,30.1,24.2
+site-blocked,with failure handling (deployed),1,2,2,0,0,-0.5,0.0,-1.0,100.0,0,0,0.97,30.1,24.2
+site-blocked,with failure handling (deployed),2,2,2,0,0,1.0,1.0,1.0,100.0,0,0,0.969,30.0,24.2
+site-blocked,with failure handling (deployed),3,2,2,0,0,0.0,0.0,0.0,99.99,0,0,0.969,29.9,24.2
+site-blocked,with failure handling (deployed),4,2,2,0,0,-1.5,-1.0,-2.0,100.0,0,0,0.97,30.0,24.2
+site-blocked,with failure handling (deployed),5,2,2,0,0,0.0,0.0,0.0,100.0,0,0,0.969,30.0,24.2
+site-blocked,with failure handling (deployed),6,2,2,0,0,0.0,0.0,0.0,100.0,0,0,0.97,30.1,24.2
+site-blocked,with failure handling (deployed),7,2,2,0,0,1.0,1.0,1.0,99.97,0,0,0.969,30.0,24.2
+site-blocked,with failure handling (deployed),8,2,2,0,0,0.0,0.0,0.0,100.0,0,0,0.969,30.0,24.2
+site-blocked,with failure handling (deployed),9,2,2,0,0,-0.5,0.0,-1.0,99.98,0,0,0.969,30.0,24.2
+site-blocked,with failure handling (deployed),10,2,2,0,0,-0.5,0.0,-1.0,100.0,0,0,0.968,30.0,24.2

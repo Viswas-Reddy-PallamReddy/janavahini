@@ -1,0 +1,5 @@
+trace,nodes,seconds,node_seconds,identical_pct,differing_node_seconds,first_difference,msg_bytes,node_state_bytes
+compartment-surge,6,1500,9000,100.0,0,,25,804
+compartment-blocked,6,1500,9000,100.0,0,,25,804
+site-surge,244,3600,878400,100.0,0,,25,804
+site-blocked,244,3600,878400,100.0,0,,25,804

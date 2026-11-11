@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghat Crowd Monitor</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2433; --muted: #5b6475; --line: #dde1e8;
+    --ok: #2f9e6b; --watch: #e0a100; --crit: #d64040; --water: #cfe3f5; --road: #eceff3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #12151b; --panel: #1b1f27; --ink: #e8ebf1; --muted: #9aa3b3; --line: #2c323d;
+            --water: #1e3a52; --road: #252a33; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  h1 { font-size: 18px; margin: 0; }
+  .meta { color: var(--muted); }
+  .cmd { margin-left: auto; padding: 6px 14px; border-radius: 6px; font-weight: 700; color: #fff; background: var(--ok); }
+  .cmd.HOLD { background: var(--watch); } .cmd.CLOSE { background: var(--crit); }
+  main { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 16px; padding: 16px 20px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px 16px; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .card h2 { font-size: 14px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  svg { width: 100%; height: auto; display: block; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; color: #fff; }
+  .NORMAL { background: var(--ok); } .WATCH { background: var(--watch); } .CRITICAL { background: var(--crit); }
+  .NEAR { background: var(--ok); } .DRIFTING { background: var(--watch); } .SEPARATED, .LOST { background: var(--crit); }
+  .log { max-height: 220px; overflow: auto; font-size: 13px; }
+  .log div { padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  .stack { display: grid; gap: 16px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; }
+  input, select, button { font: inherit; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  input { flex: 1 1 140px; min-width: 0; }
+  button { cursor: pointer; background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .case { border-top: 1px solid var(--line); padding: 8px 0; color: var(--ink); }
+  .trail { font-size: 12px; color: var(--muted); }
+  .warn { color: var(--crit); font-weight: 700; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ghat Crowd Monitor: model compartment</h1>
+  <span class="meta" id="src">connecting…</span>
+  <span class="meta" id="simt"></span>
+  <span class="cmd" id="cmd" title="Recommended inflow command at the road head">INFLOW: OPEN</span>
+</header>
+<main>
+  <section class="stack">
+    <div class="card">
+      <h2>Live map: density and quorum-sensing alert state</h2>
+      <svg id="map" viewBox="0 0 780 300" role="img" aria-label="Compartment map"></svg>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--ok)"></span>&lt; 2 p/m²</span>
+        <span><span class="sw" style="background:var(--watch)"></span>2–4 p/m²</span>
+        <span><span class="sw" style="background:var(--crit)"></span>≥ 4 p/m² (Green Guide limit)</span>
+        <span>Thick outline = node alert state</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Zones</h2>
+      <table><thead><tr><th>Zone</th><th>Density (p/m²)</th><th>QS level</th><th>State</th></tr></thead>
+        <tbody id="zones"></tbody></table>
+    </div>
+  </section>
+  <section class="stack">
+    <div class="card">
+      <h2>Lost persons (PS-03)</h2>
+      <form id="reportForm" class="row">
+        <input id="band" placeholder="Band code, e.g. PK-4821" value="PK-4821" aria-label="Band code">
+        <select id="channel" aria-label="Channel"><option>desk</option><option>ivr</option><option>volunteer</option></select>
+        <button type="submit">Report missing</button>
+        <button type="button" id="foundBtn" title="Volunteer scanned this band at Desk 1">Scan at desk</button>
+      </form>
+      <div id="cases" style="margin-top:10px" class="meta">No open cases.</div>
+    </div>
+    <div class="card">
+      <h2>Events (lost persons, node faults)</h2>
+      <div class="log" id="events"></div>
+    </div>
+    <div class="card">
+      <h2>Alert log</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </section>
+</main>
+<script>
+// map geometry in metres (x 0..94, y -6..30), drawn at 8 px/m
+const S = 8, Y0 = 30, PAD = 10;
+const px = x => PAD + x * S, py = y => PAD + (Y0 - y) * S;
+const rect = (x0, y0, x1, y1) => ({x: px(x0), y: py(y1), w: (x1 - x0) * S, h: (y1 - y0) * S});
+const ZR = {
+  R1: rect(0, 0, 30, 8), R2: rect(30, 0, 54, 8), G: rect(54, 0, 62, 8),
+  C1: rect(62, -6, 77, 14), C2: rect(77, -6, 92, 14), X: rect(80, 14, 82, 30),
+};
+const NODE_POS = {R1: [15, 4], R2: [42, 4], G: [58, 4], C1: [69.5, 4], C2: [84.5, 4], X: [81, 24]};
+const LINKS = [["R1","R2"],["R2","G"],["G","C1"],["C1","C2"],["C2","X"],["C1","X"]];
+const svg = document.getElementById("map");
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent = svg) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.appendChild(e); return e;
+}
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+el("rect", {x: px(88), y: py(14), width: 4 * S, height: 20 * S, fill: css("--water")});
+el("text", {x: px(90), y: py(-7.5), "text-anchor": "middle", "font-size": 11, fill: css("--muted")}).textContent = "river";
+const zoneEls = {};
+for (const [z, r] of Object.entries(ZR)) {
+  zoneEls[z] = el("rect", {x: r.x, y: r.y, width: r.w, height: r.h, rx: 4, fill: css("--road"),
+    "fill-opacity": 0.85, stroke: css("--line"), "stroke-width": 1.5});
+  el("text", {x: r.x + 6, y: r.y + 14, "font-size": 11, fill: css("--ink")}).textContent = z;
+}
+for (const [a, b] of LINKS) {
+  el("line", {x1: px(NODE_POS[a][0]), y1: py(NODE_POS[a][1]), x2: px(NODE_POS[b][0]), y2: py(NODE_POS[b][1]),
+    stroke: css("--muted"), "stroke-dasharray": "3 3", "stroke-width": 1});
+}
+const nodeEls = {};
+for (const [z, [x, y]] of Object.entries(NODE_POS)) {
+  nodeEls[z] = el("circle", {cx: px(x), cy: py(y), r: 7, fill: css("--panel"), stroke: css("--ink"), "stroke-width": 2});
+}
+const color = d => d >= 4 ? css("--crit") : d >= 2 ? css("--watch") : css("--ok");
+const stateColor = s => s === "CRITICAL" ? css("--crit") : s === "WATCH" ? css("--watch") : css("--line");
+
+function render(s) {
+  document.getElementById("src").textContent = "source: " + s.source;
+  document.getElementById("simt").textContent = "t = " + Math.round(s.sim_time) + " s";
+  const cmd = document.getElementById("cmd");
+  cmd.textContent = "INFLOW: " + s.inflow_command;
+  cmd.className = "cmd " + s.inflow_command;
+  const rows = [];
+  for (const z of s.zones) {
+    const e = zoneEls[z.zone]; if (!e) continue;
+    e.setAttribute("fill", color(z.density));
+    e.setAttribute("fill-opacity", Math.min(0.25 + z.density / 5, 0.9));
+    e.setAttribute("stroke", stateColor(z.state));
+    e.setAttribute("stroke-width", z.state === "NORMAL" ? 1.5 : 5);
+    nodeEls[z.zone].setAttribute("fill", z.state === "NORMAL" ? css("--panel") : stateColor(z.state));
+    rows.push(`<tr><td>${z.label}</td><td>${z.density.toFixed(2)}</td><td>${z.level.toFixed(2)}</td>` +
+              `<td><span class="pill ${z.state}">${z.state}</span></td></tr>`);
+  }
+  document.getElementById("zones").innerHTML = rows.join("");
+  document.getElementById("log").innerHTML = s.alerts.slice().reverse().map(a =>
+    `<div>t=${Math.round(a.sim_time)} s · ${a.label}: ${a.from} → <span class="pill ${a.to}">${a.to}</span></div>`).join("")
+    || "<div class='meta'>No alerts yet.</div>";
+  const ago = t => Math.round((Date.now() / 1000 - t) / 60) + " min ago";
+  document.getElementById("cases").innerHTML = s.cases.length ? s.cases.slice().reverse().map(c => `
+    <div class="case"><b>${c.case}</b> · ${c.channel === "auto (band)" ? '<span class="pill WATCH">AUTO-FLAGGED</span> ' : ""}${c.status}${c.simulated ? " · <i>simulated trail</i>" : ""}<br>
+      ${c.description || ""} ${c.contact ? "· contact " + c.contact : ""} · via ${c.channel}<br>
+      ${c.last_seen_zone ? `Last seen: <b>${c.last_seen_label}</b> (${ago(c.last_seen_time)})` : "Searching node buffers…"}
+      ${c.designated_desk ? `<br>Bring the person to: <b>${c.designated_desk}</b> (nearest to where separation happened)` : ""}
+      ${c.family_zone_hint ? `<br>Family phone last heard near: <b>${c.family_zone_hint.label}</b>` : ""}
+      ${c.exit_alert ? `<br><span class="warn">EXIT WATCH: band seen at an exit</span>` : ""}
+      ${(c.actions || []).length ? `<div class="trail">Station actions: ${c.actions.join(" · ")}</div>` : ""}
+      ${c.trail.length ? `<div class="trail">Trail: ${c.trail.map(t => t.label + " (" + ago(t.time) + ")").join(" → ")}</div>` : ""}
+    </div>`).join("") : "No open cases.";
+  document.getElementById("events").innerHTML = s.events.slice().reverse().map(e =>
+    `<div>${new Date(e.time * 1000).toLocaleTimeString()} · ${e.text}</div>`).join("") || "<div class='meta'>No events yet.</div>";
+}
+
+async function post(path, body) {
+  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  if (!r.ok) alert((await r.json()).detail || r.statusText);
+}
+document.getElementById("reportForm").onsubmit = e => {
+  e.preventDefault();
+  post("/api/v1/reports", {band_code: document.getElementById("band").value.trim(), channel: document.getElementById("channel").value});
+};
+document.getElementById("foundBtn").onclick = () =>
+  post("/api/v1/found", {band_code: document.getElementById("band").value.trim(), desk: "Desk 1 (Entry gate)"});
+
+function connect() {
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+  ws.onmessage = ev => render(JSON.parse(ev.data));
+  ws.onclose = () => { document.getElementById("src").textContent = "disconnected: retrying…"; setTimeout(connect, 1500); };
+}
+connect();
+</script>
+</body>
+</html>

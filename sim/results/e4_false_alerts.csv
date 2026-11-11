@@ -1,0 +1,7 @@
+method,CRITICAL_events_per_hour,WATCH_events_per_hour,peak_density_in_run
+threshold,0.0,0.0,1.375
+threshold+rate,0.0,0.0,1.375
+centralised,0.0,0.0,1.375
+qs,0.0,0.0,1.375
+qs-laplacian (ablation),0.0,0.0,1.375
+route-qs,0.0,0.0,1.375

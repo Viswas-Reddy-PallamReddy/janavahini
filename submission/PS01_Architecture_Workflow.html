@@ -1,0 +1,286 @@
+<title>Janavahini Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: an A4 concept note. One reading column; each section carries the evaluation criterion it answers. */
+:root {
+  --paper: #ffffff; --ink: #15202b; --ink2: #3e4a57; --muted: #66717e; --rule: #d9dfe6; --wash: #f0f4f8;
+  --river: #1d5b94; --ours: #1f6fbf; --base: #c4561f;
+  --ok: #2b8a5a; --watch: #b97f00; --crit: #c13b3b;
+  --fill: #fff3b0;
+  --display: "Archivo", "Segoe UI", Arial, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #11161c; --ink: #e8edf2; --ink2: #c0c8d1; --muted: #8e99a5; --rule: #2a333d; --wash: #18202a;
+  --river: #6fa8dc; --ours: #5a9ee6; --base: #e07a46; --ok: #4cb37f; --watch: #e0a52a; --crit: #e06464; --fill: #5a4a00; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #11161c; --ink: #e8edf2; --ink2: #c0c8d1; --muted: #8e99a5; --rule: #2a333d; --wash: #18202a;
+  --river: #6fa8dc; --ours: #5a9ee6; --base: #e07a46; --ok: #4cb37f; --watch: #e0a52a; --crit: #e06464; --fill: #5a4a00; color-scheme: dark }
+
+@page {
+  size: A4; margin: 14mm 15mm 16mm 15mm;
+  @bottom-left { content: "Janavahini · Team IIIT Hyderabad · PS-01 technical architecture and workflow · Godavari Pushkaralu 2027"; font: 7.5pt "Source Sans 3", Arial, sans-serif; color: #66717e; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 7.5pt "Source Sans 3", Arial, sans-serif; color: #66717e; }
+}
+body { background: var(--paper); color: var(--ink); font: 400 15px/1.5 var(--body); }
+.doc { max-width: 820px; margin: 0 auto; padding-block: 32px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); color: var(--ink); text-wrap: balance; margin: 0; }
+h2 { break-inside: avoid; }
+h1 { font-size: 30px; line-height: 1.12; font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 19px; font-weight: 700; margin-top: 4px; }
+h3 { font-size: 15px; font-weight: 700; }
+p { margin: 0; }
+.eyebrow { font: 600 11px/1.3 var(--display); letter-spacing: 0.09em; text-transform: uppercase; color: var(--river); }
+.lede { font-size: 16.5px; color: var(--ink2); }
+/* normal flow (not grid) so long sections split cleanly across printed pages */
+section { padding-top: 22px; margin-top: 22px; border-top: 1px solid var(--rule); }
+section > * + *, .stack > * + * { margin-top: 10px; }
+ul, ol { margin: 0; padding-left: 20px; }
+li + li { margin-top: 4px; }
+strong { font-weight: 700; }
+.small { font-size: 12.5px; color: var(--muted); }
+.mono { font-family: var(--mono); font-size: 12px; }
+.fill { background: var(--fill); padding: 0 3px; border-radius: 2px; }
+
+/* title block */
+.titleblock { display: grid; gap: 12px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink2); }
+.meta b { color: var(--ink); font-weight: 600; }
+
+/* key figures */
+.figs { break-inside: avoid; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.fig { background: var(--wash); border-radius: 6px; padding: 10px 12px; display: grid; gap: 2px; align-content: start; }
+.fig .n { font: 800 25px/1.1 var(--display); color: var(--ours); font-variant-numeric: tabular-nums; }
+.fig .t { font-size: 12.5px; line-height: 1.35; color: var(--ink2); }
+
+/* two-column blocks */
+.cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+figure { margin: 0; display: grid; gap: 4px; break-inside: avoid; }
+figure img { width: 100%; border-radius: 4px; display: block; }
+figcaption { font-size: 11.5px; line-height: 1.35; color: var(--muted); }
+
+/* steps */
+.steps { break-inside: avoid; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; }
+.step { align-content: start; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 2px 8px; break-inside: avoid; }
+.step .k { grid-row: span 2; width: 22px; height: 22px; border-radius: 50%; background: var(--ours); color: #fff;
+  font: 700 12px/22px var(--display); text-align: center; margin-top: 1px; }
+.step p { font-size: 14px; }
+
+/* status chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--rule); border-radius: 999px; padding: 3px 10px 3px 6px; font-size: 13px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+/* tables */
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.35; }
+tr { break-inside: avoid; }
+.eyebrow, h2, h3 { break-after: avoid; }
+th, td { text-align: left; vertical-align: top; padding: 5px 8px; border-bottom: 1px solid var(--rule); }
+th { font: 600 11.5px/1.3 var(--display); color: var(--ink2); background: var(--wash); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .good { color: var(--ok); font-weight: 700; }
+td .bad { color: var(--crit); font-weight: 700; }
+tr.total td { font-weight: 700; border-top: 1.5px solid var(--ink2); }
+
+.diagram svg { width: 100%; height: auto; display: block; }
+.diagram text { font-family: var(--body); }
+
+.refs { font-size: 11.5px; line-height: 1.4; color: var(--ink2); }
+.refs li + li { margin-top: 2px; }
+.refs a { color: var(--river); word-break: break-all; }
+a { color: var(--river); }
+
+.pb { break-before: page; }
+@media print {
+  body { font-size: 13.4px; }
+  .doc { max-width: none; padding: 0; }
+  h1 { font-size: 27px; }
+  h2 { font-size: 17px; }
+  section { padding-top: 14px; margin-top: 14px; }
+  .lede { font-size: 15px; }
+  .fig .n { font-size: 22px; }
+}
+@media (max-width: 640px) {
+  .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cols, .steps { grid-template-columns: minmax(0, 1fr); }
+  h1 { font-size: 25px; }
+}
+</style>
+<style>
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; break-inside: avoid; }
+.fbox { background: var(--wash); border-radius: 6px; padding: 8px 10px; border-left: 4px solid var(--ours); font-size: 13px; line-height: 1.35; }
+.fbox b { display: block; font-family: var(--display); font-size: 13px; color: var(--ink); margin-bottom: 2px; }
+.fbox.a { border-left-color: var(--watch); } .fbox.r { border-left-color: var(--crit); } .fbox.g { border-left-color: var(--ok); }
+.lanes td:first-child { font-weight: 700; white-space: nowrap; }
+@media (max-width: 640px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+<main class="doc">
+  <header class="titleblock">
+    <div class="eyebrow">Technical architecture and workflow · Problem Statement 1: Real-Time Crowd Monitoring and Congestion Management</div>
+    <h1>Janavahini: how the system is built and how an alert flows</h1>
+    <p class="lede">Counters on every road, gate and junction estimate crowd density, look a minute ahead, and pass warnings back along the pilgrim route to the police who can act. Decisions are made on the devices, so alerts keep working when the network or the command centre fails.</p>
+    <div class="meta">
+      <span><b>Team</b> IIIT Hyderabad: Divya Teja Yekkaluru, Pallamreddy Viswas Reddy</span>
+      <span><b>Challenge</b> RTIH × RMC Innovation-Led Solutions for Godavari Pushkaralu 2027</span>
+      <span><b>Date</b> November 2026</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="eyebrow">1 · Technical architecture</div>
+    <h2>Four layers: counting, node, mesh, server, with the RMC ICCC on top</h2>
+    <figure class="diagram">
+      <svg viewBox="0 0 760 200" role="img" aria-labelledby="a1t">
+        <title id="a1t">Architecture: counters feed ESP32 nodes, which talk over a radio mesh; a gateway passes their state to the command-centre server, which serves the RMC ICCC dashboards and can send commands back.</title>
+        <defs><marker id="aA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink2)"/></marker></defs>
+        <g font-size="10.5" fill="var(--ink2)">
+          <rect x="2" y="20" width="140" height="112" rx="8" fill="var(--wash)" stroke="var(--rule)"/>
+          <text x="72" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">1 · Counting</text>
+          <text x="72" y="64" text-anchor="middle">2 × VL53L1X ToF sensors</text>
+          <text x="72" y="80" text-anchor="middle">per patch boundary,</text>
+          <text x="72" y="96" text-anchor="middle">or CCTV/AI counts</text>
+          <rect x="157" y="20" width="140" height="112" rx="8" fill="var(--wash)" stroke="var(--ours)" stroke-width="1.5"/>
+          <text x="227" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">2 · Node (ESP32)</text>
+          <text x="227" y="64" text-anchor="middle">density, 60-s forecast</text>
+          <text x="227" y="80" text-anchor="middle">route-weighted alert</text>
+          <text x="227" y="96" text-anchor="middle">dead-node handling</text>
+          <text x="227" y="112" text-anchor="middle">IP65 3-colour signal</text>
+          <rect x="312" y="20" width="140" height="112" rx="8" fill="var(--wash)" stroke="var(--rule)"/>
+          <text x="382" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">3 · Radio mesh</text>
+          <text x="382" y="64" text-anchor="middle">ESP-NOW, 25 B / s</text>
+          <text x="382" y="80" text-anchor="middle">LoRa, long hops</text>
+          <text x="382" y="96" text-anchor="middle">no internet needed</text>
+          <rect x="467" y="20" width="140" height="112" rx="8" fill="var(--wash)" stroke="var(--rule)"/>
+          <text x="537" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">4 · Server (FastAPI)</text>
+          <text x="537" y="64" text-anchor="middle">REST API + OpenAPI docs</text>
+          <text x="537" y="80" text-anchor="middle">live WebSocket feed</text>
+          <text x="537" y="96" text-anchor="middle">web dashboard</text>
+          <text x="537" y="112" text-anchor="middle">alert and node log</text>
+          <rect x="622" y="20" width="136" height="112" rx="8" fill="var(--wash)" stroke="var(--rule)"/>
+          <text x="690" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">RMC ICCC</text>
+          <text x="690" y="64" text-anchor="middle">dashboards</text>
+          <text x="690" y="80" text-anchor="middle">state systems (RTGS)</text>
+          <text x="690" y="96" text-anchor="middle">inflow commands back</text>
+          <text x="690" y="112" text-anchor="middle">(hybrid mode)</text>
+        </g>
+        <g stroke="var(--ink2)" stroke-width="1.6" fill="none">
+          <line x1="143" y1="76" x2="155" y2="76" marker-end="url(#aA)"/>
+          <line x1="299" y1="76" x2="310" y2="76" marker-start="url(#aA)" marker-end="url(#aA)"/>
+          <line x1="454" y1="76" x2="465" y2="76" marker-start="url(#aA)" marker-end="url(#aA)"/>
+          <line x1="609" y1="76" x2="620" y2="76" marker-start="url(#aA)" marker-end="url(#aA)"/>
+        </g>
+        <rect x="157" y="146" width="295" height="40" rx="8" fill="var(--ours)" fill-opacity="0.12"/>
+        <text x="304" y="163" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ours)">Alert path: works with the server and</text>
+        <text x="304" y="178" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ours)">network switched off</text>
+        <rect x="467" y="146" width="291" height="40" rx="8" fill="var(--wash)"/>
+        <text x="612" y="163" text-anchor="middle" font-size="11" fill="var(--ink2)">Oversight path: a gateway node passes</text>
+        <text x="612" y="178" text-anchor="middle" font-size="11" fill="var(--ink2)">every node's state to the server</text>
+      </svg>
+      <figcaption>Figure 1. System architecture. Each node applies the stronger of its own decision and the ICCC's command, so the ICCC can only add caution.</figcaption>
+    </figure>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width: 15%">Layer</th><th>Technology</th><th style="width: 28%">Prototype status</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Counting</td><td>Two VL53L1X time-of-flight sensors per patch boundary give direction-aware in/out counts; or density from existing CCTV/AI feeds through the API</td><td>Simulated; sensors are an add-on</td></tr>
+          <tr><td>2 · Node</td><td>ESP32 firmware (C++, PlatformIO) computes density, a 60-s forecast and the route-weighted alert, and drives an IP65 three-colour signal. The alert logic is one header shared with the simulator.</td><td>Complete; 22% RAM; 244 virtual boards tested; not yet flashed</td></tr>
+          <tr><td>3 · Mesh</td><td>ESP-NOW 25-byte messages once a second for short hops (0.7% channel load with 10 boards in range); LoRa for long hops, sent on change. Silent nodes are detected and reported.</td><td>ESP-NOW done; LoRa stubbed until modules arrive</td></tr>
+          <tr><td>4 · Server</td><td>Python FastAPI: REST with OpenAPI documentation, WebSocket live feed; web dashboard with zone map, alert log, inflow commands and node-down reports</td><td>Done; end-to-end tests pass</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">2 · Workflow inside every node · repeated once a second</div>
+    <h2>Count, look ahead, combine warnings, signal, pass back</h2>
+    <div class="flow">
+      <div class="fbox"><b>1 · Count</b>Sensors at both ends of the ~25 m patch count people crossing in and out.</div>
+      <div class="fbox"><b>2 · Density</b>People in patch = in − out; density = people ÷ patch area.</div>
+      <div class="fbox"><b>3 · Look ahead</b>Forecast = density now + rate of rise × 60 s (rate used only once the patch is busy, ≥ 1.5 persons/m²).</div>
+      <div class="fbox"><b>4 · Listen</b>Receive the states of downstream nodes over the mesh; weight each by the share of this road's flow that heads there (from the route map).</div>
+      <div class="fbox a"><b>5 · Combine</b>Take the strongest of: own forecast, weighted downstream warnings, and the ICCC command (if the network is up).</div>
+      <div class="fbox r"><b>6 · Dead neighbour?</b>"Unknown is not safe": keep its last warning, listen one hop further, report "NODE DOWN – send staff".</div>
+      <div class="fbox g"><b>7 · Signal</b>Set the three-colour light: green, amber or red (NDMA-aligned levels).</div>
+      <div class="fbox"><b>8 · Pass back</b>Broadcast state to upstream neighbours and, via the gateway, to the server and ICCC.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">3 · Operational workflow · who does what during a surge</div>
+    <h2>From the first sign of filling to a safe release</h2>
+    <figure class="diagram">
+      <svg viewBox="0 0 760 120" role="img" aria-labelledby="w1t">
+        <title id="w1t">Alert states: green normal, amber when a downstream ghat is forecast to cross 4 persons per square metre, red when it is over the limit, then back to green only after an operator check.</title>
+        <defs><marker id="wA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink2)"/></marker></defs>
+        <rect x="10" y="20" width="170" height="56" rx="10" fill="var(--ok)" fill-opacity="0.9"/>
+        <text x="95" y="44" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">GREEN</text>
+        <text x="95" y="62" fill="#fff" font-size="11" text-anchor="middle">let people through</text>
+        <rect x="290" y="20" width="170" height="56" rx="10" fill="var(--watch)" fill-opacity="0.95"/>
+        <text x="375" y="44" fill="#111" font-size="14" font-weight="700" text-anchor="middle">AMBER</text>
+        <text x="375" y="62" fill="#111" font-size="11" text-anchor="middle">slow, or divert at junction</text>
+        <rect x="570" y="20" width="170" height="56" rx="10" fill="var(--crit)" fill-opacity="0.9"/>
+        <text x="655" y="44" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">RED</text>
+        <text x="655" y="62" fill="#fff" font-size="11" text-anchor="middle">hold here</text>
+        <g stroke="var(--ink2)" stroke-width="1.8" fill="none">
+          <line x1="182" y1="40" x2="286" y2="40" marker-end="url(#wA)"/>
+          <line x1="462" y1="40" x2="566" y2="40" marker-end="url(#wA)"/>
+          <path d="M 655 78 L 655 104 L 95 104 L 95 80" marker-end="url(#wA)"/>
+        </g>
+        <text x="234" y="33" font-size="10.5" fill="var(--ink2)" text-anchor="middle">forecast &gt; limit</text>
+        <text x="514" y="33" font-size="10.5" fill="var(--ink2)" text-anchor="middle">over 4 p/m²</text>
+        <text x="375" y="98" font-size="10.5" fill="var(--ink2)" text-anchor="middle">density falls; holds released only by an operator after checking</text>
+      </svg>
+      <figcaption>Figure 2. Alert states seen by the police at each post. Roads that don't feed the problem stay green.</figcaption>
+    </figure>
+    <div class="tw">
+      <table class="lanes">
+        <thead><tr><th style="width: 16%">Step</th><th>Counter node (automatic)</th><th>Police post / volunteers</th><th>ICCC operator</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Normal</td><td>Counts and forecasts every second; light green</td><td>Let people through</td><td>Watches live density map</td></tr>
+          <tr><td>2 · Early warning</td><td>Ghat forecast to cross 4 p/m² → amber passed back along the route</td><td>Road head: slow the flow. Junction: send new arrivals to the ghat with room</td><td>Sees which roads feed the problem; may add caution</td></tr>
+          <tr><td>3 · Danger</td><td>Ghat over the limit → red passed back</td><td>Hold at the nearest upstream holding area, where people can wait safely</td><td>Coordinates diversions, PA and police reinforcements</td></tr>
+          <tr><td>4 · Node failure</td><td>Neighbours keep its warning; "NODE DOWN – send staff"</td><td>Staff check the node</td><td>Clears the report after the check</td></tr>
+          <tr><td>5 · Release</td><td>Density falls; forecast back below limit</td><td>Release in stages</td><td>Confirms release of holds</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">4 · Hardware, software, infrastructure and integration</div>
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width: 18%">Item</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td>Hardware per node</td><td>ESP32 board with LoRa (SX1276); two VL53L1X ToF sensors (not needed where CCTV counts exist); IP65 three-colour signal tower; IP65 enclosure; mains adapter with backup battery.</td></tr>
+          <tr><td>Quantity</td><td>About 250 nodes for the full site (68 compartments, 20 junctions, 10 Nagaras); 10–15 for the pilot. Gateway node(s) connect to the server over USB/serial.</td></tr>
+          <tr><td>Software</td><td>Open-source ESP32 firmware, FastAPI backend and web dashboard; runs on one server or VM at the ICCC.</td></tr>
+          <tr><td>Infrastructure</td><td>Power and mounting points at gates, roads and junctions; barricades narrowing gates to single or double file for accurate counting.</td></tr>
+          <tr><td>Integration</td><td>(a) Read crowd counts from existing CCTV/AI analytics. (b) Push node states, alerts and node-down events to ICCC dashboards and RTGS via a documented REST/WebSocket API. (c) Accept ICCC inflow commands. (d) Staff messages in Telugu and English.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">5 · Data and security</div>
+    <ul>
+      <li><strong>Data:</strong> only counts and densities per patch, node health and alert logs. No images leave the sensor; no faces, phones or personal data.</li>
+      <li><strong>Security:</strong> authenticated node messages so a spoofed radio cannot raise or clear alerts; TLS on all API traffic; API keys and role-based access for ICCC operators; an audit log of every command; holds released only by an operator; hosting in the RMC or state data centre following CERT-In guidelines.</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="eyebrow">6 · Prototype in action</div>
+    <figure>
+      <img src="img/dashboard_ps01.jpg" alt="Prototype dashboard during a simulated surge: zone map with amber and red outlines, zone table, alert log, and the inflow command set to CLOSE">
+      <figcaption>Figure 3. Our prototype dashboard replaying a simulated surge. The warning has reached the approach road (amber) before the bathing steps pass the limit. All results so far are from simulation; the board firmware is not yet field-tested.</figcaption>
+    </figure>
+  </section>
+</main>

@@ -1,0 +1,6 @@
+scenario,variant,peak_core_density,seconds_above_4,seconds_above_5,pilgrims_diverted,pilgrims_through_gate
+surge,no system,6.046666666666667,831,758,0,3719
+surge,threshold (current practice),6.046666666666667,831,758,0,3719
+surge,"centralised ICCC, backhaul cut at 250 s",6.046666666666667,831,758,0,3719
+surge,"QS mesh, 30% link loss, no backhaul",4.226666666666667,567,0,2078,1770
+surge,"centralised ICCC, backhaul up",3.1933333333333334,0,0,2091,1691

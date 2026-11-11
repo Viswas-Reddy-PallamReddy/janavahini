@@ -1,0 +1,2 @@
+scenario,variant,peak_core_density,seconds_above_4,seconds_above_5,pilgrims_diverted,pilgrims_through_gate
+surge,"QS mesh, 30% link loss, no backhaul",4.226666666666667,567,0,2078,1770

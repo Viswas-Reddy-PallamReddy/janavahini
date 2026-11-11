@@ -1,0 +1,13 @@
+variant,runs,peak_core_density_mean,peak_core_density_sd,peak_core_density_min,peak_core_density_max,seconds_above_4_mean,seconds_above_4_sd,seconds_above_4_min,seconds_above_4_max,seconds_above_5_mean,seconds_above_5_sd,seconds_above_5_min,seconds_above_5_max,pilgrims_diverted_mean,pilgrims_diverted_sd,pilgrims_diverted_min,pilgrims_diverted_max,pilgrims_through_gate_mean,pilgrims_through_gate_sd,pilgrims_through_gate_min,pilgrims_through_gate_max,runs_never_above_4
+no system,5,6.01,0.04,5.94,6.05,830.6,6.23,821.0,837.0,746.4,12.52,729.0,759.0,0.0,0.0,0.0,0.0,3734.8,28.75,3707.0,3782.0,0
+threshold (current practice),5,6.01,0.04,5.94,6.05,830.6,6.23,821.0,837.0,746.4,12.52,729.0,759.0,0.0,0.0,0.0,0.0,3734.8,28.75,3707.0,3782.0,0
+"centralised ICCC, backhaul up",5,2.93,0.34,2.65,3.39,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1911.0,186.98,1689.0,2105.0,1843.2,192.26,1631.0,2104.0,5
+"centralised ICCC, backhaul cut at 250 s",5,6.01,0.04,5.94,6.05,830.6,6.23,821.0,837.0,746.4,12.52,729.0,759.0,0.0,0.0,0.0,0.0,3734.8,28.75,3707.0,3782.0,0
+"QS mesh, 30% link loss, no backhaul",5,4.14,0.25,3.69,4.27,327.0,217.17,0.0,487.0,0.0,0.0,0.0,0.0,1953.0,113.97,1786.0,2073.0,1845.4,95.84,1770.0,1992.0,1
+"route QS, 30% link loss, no backhaul",5,3.34,0.22,2.95,3.46,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2002.0,170.52,1737.0,2155.0,1760.4,141.36,1639.0,1989.0,5
+"hybrid ICCC + route QS, backhaul up",5,2.93,0.34,2.65,3.39,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1911.4,184.63,1695.0,2102.0,1846.8,191.43,1630.0,2075.0,5
+"hybrid, backhaul cut mid-surge (520 s)",5,3.13,0.39,2.68,3.43,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1964.6,138.32,1796.0,2102.0,1796.6,144.9,1634.0,1980.0,5
+"route QS, gate board G dies, no failure handling",3,6.07,0.04,6.03,6.1,766.67,15.5,749.0,778.0,684.33,15.89,666.0,694.0,258.67,18.9,244.0,280.0,3434.33,53.27,3389.0,3493.0,0
+"route QS, gate board G dies, failure handling",3,3.28,0.26,2.98,3.43,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2122.0,116.16,1988.0,2194.0,1666.67,96.37,1599.0,1777.0,3
+"route QS, holding-area board C1 dies, no failure handling",3,6.06,0.02,6.03,6.07,767.33,15.95,749.0,778.0,685.67,17.1,666.0,697.0,261.33,18.04,244.0,280.0,3438.0,48.77,3400.0,3493.0,0
+"route QS, holding-area board C1 dies, failure handling",3,3.3,0.21,3.05,3.43,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2195.67,21.39,2171.0,2209.0,1614.67,19.55,1596.0,1635.0,3

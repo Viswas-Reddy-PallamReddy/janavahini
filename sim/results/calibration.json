@@ -1,0 +1,158 @@
+{
+ "chosen_time_gap": 0.5,
+ "criterion": "min RMSE vs Weidmann FD subject to bottleneck flow >= Weidmann capacity (1.22 p/(m s))",
+ "sweep": [
+  {
+   "time_gap": 1.0,
+   "fd_rmse_m_s": 0.198,
+   "bottleneck_specific_flow": 0.85,
+   "rimea12_pass": true,
+   "fd": [
+    {
+     "target_density": 0.5,
+     "measured_density": 0.39,
+     "measured_speed": 1.139,
+     "weidmann_speed": 1.326
+    },
+    {
+     "target_density": 1.0,
+     "measured_density": 1.0,
+     "measured_speed": 0.7,
+     "weidmann_speed": 1.06
+    },
+    {
+     "target_density": 2.0,
+     "measured_density": 1.99,
+     "measured_speed": 0.45,
+     "weidmann_speed": 0.611
+    },
+    {
+     "target_density": 3.0,
+     "measured_density": 2.98,
+     "measured_speed": 0.283,
+     "weidmann_speed": 0.336
+    },
+    {
+     "target_density": 4.0,
+     "measured_density": 3.98,
+     "measured_speed": 0.21,
+     "weidmann_speed": 0.159
+    }
+   ]
+  },
+  {
+   "time_gap": 0.7,
+   "fd_rmse_m_s": 0.108,
+   "bottleneck_specific_flow": 0.11,
+   "rimea12_pass": true,
+   "fd": [
+    {
+     "target_density": 0.5,
+     "measured_density": 0.39,
+     "measured_speed": 1.176,
+     "weidmann_speed": 1.326
+    },
+    {
+     "target_density": 1.0,
+     "measured_density": 0.93,
+     "measured_speed": 1.001,
+     "weidmann_speed": 1.097
+    },
+    {
+     "target_density": 2.0,
+     "measured_density": 2.01,
+     "measured_speed": 0.643,
+     "weidmann_speed": 0.601
+    },
+    {
+     "target_density": 3.0,
+     "measured_density": 3.0,
+     "measured_speed": 0.405,
+     "weidmann_speed": 0.331
+    },
+    {
+     "target_density": 4.0,
+     "measured_density": 3.99,
+     "measured_speed": 0.297,
+     "weidmann_speed": 0.158
+    }
+   ]
+  },
+  {
+   "time_gap": 0.5,
+   "fd_rmse_m_s": 0.207,
+   "bottleneck_specific_flow": 1.46,
+   "rimea12_pass": true,
+   "fd": [
+    {
+     "target_density": 0.5,
+     "measured_density": 0.4,
+     "measured_speed": 1.205,
+     "weidmann_speed": 1.323
+    },
+    {
+     "target_density": 1.0,
+     "measured_density": 0.75,
+     "measured_speed": 1.156,
+     "weidmann_speed": 1.19
+    },
+    {
+     "target_density": 2.0,
+     "measured_density": 1.96,
+     "measured_speed": 0.902,
+     "weidmann_speed": 0.621
+    },
+    {
+     "target_density": 3.0,
+     "measured_density": 3.02,
+     "measured_speed": 0.568,
+     "weidmann_speed": 0.327
+    },
+    {
+     "target_density": 4.0,
+     "measured_density": 4.0,
+     "measured_speed": 0.408,
+     "weidmann_speed": 0.157
+    }
+   ]
+  },
+  {
+   "time_gap": 0.35,
+   "fd_rmse_m_s": 0.339,
+   "bottleneck_specific_flow": 1.85,
+   "rimea12_pass": true,
+   "fd": [
+    {
+     "target_density": 0.5,
+     "measured_density": 0.38,
+     "measured_speed": 1.285,
+     "weidmann_speed": 1.328
+    },
+    {
+     "target_density": 1.0,
+     "measured_density": 0.74,
+     "measured_speed": 1.264,
+     "weidmann_speed": 1.198
+    },
+    {
+     "target_density": 2.0,
+     "measured_density": 1.49,
+     "measured_speed": 1.191,
+     "weidmann_speed": 0.813
+    },
+    {
+     "target_density": 3.0,
+     "measured_density": 2.99,
+     "measured_speed": 0.825,
+     "weidmann_speed": 0.333
+    },
+    {
+     "target_density": 4.0,
+     "measured_density": 3.95,
+     "measured_speed": 0.59,
+     "weidmann_speed": 0.163
+    }
+   ]
+  }
+ ]
+}

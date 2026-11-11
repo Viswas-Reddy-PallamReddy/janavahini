@@ -1,0 +1,21 @@
+scenario,method,peak_compartment_density,comp_s_above_4,comp_s_above_5,peak_any_density,any_s_above_4,held_node_s,needless_hold_node_s,needless_pct,exited
+site-surge,none,4.85,1603,0,4.85,1603,0,0,0.0,201957
+site-surge,threshold,4.74,431,0,5.18,1700,5703,0,0.0,199071
+site-surge,qs-gradient,2.54,0,0,5.03,1842,22573,10169,45.0,168652
+site-surge,centralised,2.29,0,0,2.29,0,9240,0,0.0,197897
+site-surge,centralised-cut,4.85,1603,0,4.85,1603,0,0,0.0,201957
+site-surge,route-qs,2.37,0,0,3.39,0,9389,0,0.0,200549
+site-surge,route-qs no-share,2.32,0,0,3.04,0,6994,0,0.0,198290
+site-surge,route-qs with-horizon,2.37,0,0,4.2,585,12917,5656,43.8,203809
+site-surge,route-qs no-meter,2.27,0,0,2.88,0,4137,0,0.0,200291
+site-surge,route-qs no-divert,2.37,0,0,3.39,0,9575,0,0.0,199690
+site-blocked,none,4.48,311,0,4.48,311,0,0,0.0,154137
+site-blocked,threshold,4.48,311,0,4.48,311,0,0,0.0,154137
+site-blocked,qs-gradient,3.96,0,0,3.96,0,5276,1900,36.0,153364
+site-blocked,centralised,3.37,0,0,3.37,0,5640,0,0.0,151929
+site-blocked,centralised-cut,4.48,311,0,4.48,311,0,0,0.0,154137
+site-blocked,route-qs,2.42,0,0,2.42,0,1358,0,0.0,155083
+site-blocked,route-qs no-share,2.41,0,0,2.41,0,3888,0,0.0,153238
+site-blocked,route-qs with-horizon,2.42,0,0,2.42,0,1358,0,0.0,155083
+site-blocked,route-qs no-meter,2.44,0,0,2.44,0,1350,0,0.0,155076
+site-blocked,route-qs no-divert,4.07,60,0,4.26,66,1383,0,0.0,154137
