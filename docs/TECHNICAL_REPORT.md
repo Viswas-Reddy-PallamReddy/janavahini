@@ -1,7 +1,5 @@
-# Janavahini (PS-01): Technical Report
-## PS-01 Real-Time Crowd Monitoring and Congestion Management
-
-> PS-03 (lost-person reunification) is documented on the `ps-03` branch.
+# Pushkaralu 2027: Technical Report
+## PS-01 Real-Time Crowd Monitoring · PS-03 Lost-Person Reunification
 
 **Challenge:** RTIH × RMC *Innovation-Led Solutions for Godavari Pushkaralu 2027*
 **Status as of:** 31 Oct 2026. Submission deadline is 7 Nov 2026; demo/pitch day is 12 Nov 2026.
@@ -21,6 +19,7 @@
 | PS-01 node (board) failures | ✅ found a real weakness (one dead board ≈ no system), fixed in firmware in 3 steps, tested in SIL, JuPedSim and the site model; remaining gaps: 2 adjacent dead boards, a dead approach-road board (§2.8) |
 | PS-01 hybrid ICCC + mesh | ✅ (§2.9) |
 | Mathematical model checked against the simulations | ✅ E11 (§2.10) |
+| PS-03 phone-free reunion design + simulations | ✅ |
 | ESP32 firmware (3 roles) | ✅ compiles. Runs the **route-graph QS** with node-failure handling. ✅ Firmware code tested in software-in-the-loop (SIL) against the Python model: 100% identical (§4.1).  The final change (held + bypassed = the larger level) was re-checked on 31 Oct under WSL2 `g++`: still 100% identical. ⚠ Not yet flashed or tested on boards |
 | Backend (REST API for the command centre) + dashboard | ✅ end-to-end tests pass (`backend/test_app.py`) |
 | Concept notes, pitch decks, demo videos | ❌ to do |
@@ -417,8 +416,126 @@ Every prediction is listed against the matching measurement in `e11_analytic_vs_
 
 ---
 
-## 3. PS-03
-Lost-person reunification is documented on the `ps-03` branch.
+## 3. PS-03: Lost-person identification and reunification
+
+### 3.1 Constraints that shaped the design
+- **No facial recognition** (challenge rules). Privacy-preserving, compatible with the DPDP Act. ⚠ §9 restricts tracking of children (Gazette check pending).
+- **Rural families often have no smartphone, and not every member has a phone.** A child may be with another relative, or with a stranger.
+- **Bands only for children and senior citizens.** Distributing tokens to every family member is not viable.
+- **Indian precedents:**
+  - Sabarimala (Kerala Police, under-10 bands with a guardian number and QR code; Vi Suraksha);
+  - Gangasagar "e-Parichay" (about 1–2 lakh QR bands for children and the elderly);
+  - Maha Kumbh 2025 digital Khoya-Paya kendras (about 50–54k reunited, but they used facial recognition);
+  - Aarogya Setu IVRS 1921 (missed-call call-back for feature phones).
+
+### 3.2 Design evolution
+| Version | Idea | Why it changed |
+|---|---|---|
+| v1 | Child tag + guardian device; RSSI state machine NEAR → DRIFTING → SEPARATED → LOST | Assumes a guardian device; fails for rural families, a single phone, or a child with a relative |
+| v2 | Phone-free: band + registry, description matching, IVR | The user also ruled out a family band or card |
+| v3 | "Co-walker" inference: the tag learns which nearby devices stay with it | Works only if a family member carries an advertising device; families without one are invisible to any RF method |
+| **v4 (final)** | Bands for children and seniors only; node sighting buffers + LoRa search after a report; **converge-at-desk**; exit-gate watch; optional co-walker auto-flag | – |
+
+### 3.3 Final design (v4)
+- **Band:**
+  - **ID:** a rotating 8-byte ID = HMAC-SHA256(per-band key, time slot). The MAC address rotates at the same instant, so strangers can't track the band. Each band has its **own key**; a test caught two bands sharing a demo key, and this was fixed.
+  - **Beacons:** every 300 ms; every 100 ms when LOST or flagged.
+  - **Rotation period:** 60 s in the demo; 10–15 min in deployment, GAEN practice.
+  - **Printed:** QR code + helpline + case code; no phone number in plain view.
+- **Registration:** at issuance, record any reachable contact (feature phone, relative, group leader, village contact) and tell the adult which help desk to go to if separated.
+- **Nodes:** the same nodes as PS-01. Each keeps a **60-minute local buffer** of opaque band IDs (time, RSSI). Nodes can't link IDs without the key. Nothing is uploaded centrally.
+- **Report** (help desk / IVR missed call / volunteer handset):
+  - the desk computes the band's IDs for the last 60 min and broadcasts a search over the node network (LoRa in deployment);
+  - nodes reply with matches → **last-seen zone + trail**;
+  - a command beacon switches the band to LOST.
+- **Converge-at-desk:** the found person is taken to the desk nearest the **separation point**, the same desk the family was told to go to.
+- **Exit-gate watch:** a LOST band seen at an exit node raises an alert there. This covers a child led away by a stranger.
+- **Optional auto-flag (families with a learnable device):**
+  - the band learns its co-walkers;
+  - if they vanish for 2 min, it flags "possible separation";
+  - **two-stage escalation:**
+    - **stage 1:** silent watch;
+    - **stage 2:** after T_confirm with no recovery, the station nearest the child dispatches a volunteer. Nodes look for the family's devices across the region, and the station nearest the parents tells them which desk to go to.
+- **Physical limit:** **LoRa cannot sense people.** A parent with no device can't be detected by any RF method. For them the system relies on converge-at-desk, the registry and the trail.
+
+### 3.4 PS-03 simulation results
+
+**(a) Separation detection with a guardian device (v1 model, `separation_sim.py`; 20 family-hours per density):**
+- **Radio model:**
+  - P0 = −59 dBm at 1 m, path-loss exponent n = 2.0;
+  - body shadowing: 10 dB for the first body in the way, +5 dB per extra body (Januszkiewicz 2018);
+  - 3% deep 30 dB fades (Cotton 2011);
+  - σ = 6 dB;
+  - collisions up to 30% (Nikodem 2019);
+  - scan duty 50%.
+
+| Density | Naive RSSI threshold: false alarms/h | Ours: false buzz / false LOST per h | Ours: buzz delay | Ours: LOST delay |
+|---|---|---|---|---|
+| 0.5 | 1.6 | 0 / 0 | 43 s | 59 s |
+| 2.0 | 76.0 | 0 / 0 | 18 s | 26.5 s |
+| 4.0 | 143.9 | 0 / 0 | 13.5 s | 23.5 s |
+| 6.0 | 145.8 | 0 / 0 | 11 s | 29.5 s |
+
+The "0 false alarms" figure is probably optimistic, because the child trajectory model rarely wanders 5–8 m. The sighting-coverage experiment (node spacing × volunteer phones) has **not yet been run**.
+
+**(b) Co-walker inference (`companion_sim.py`; 20 runs per configuration; tag-side learning):**
+- **Model:**
+  - phones rotate their BLE address every 15 min (Android CDD; Bluetooth SIG default);
+  - the tag scans 1 s in every 5 s;
+  - imprinting at issuance;
+  - re-link across rotation by payload class + RSSI within 6 dB;
+  - a companion arms only after staying ≥ 10 min.
+
+| Density | Companion precision | Recall | Separation auto-detected | False flags / device-family-hour |
+|---|---|---|---|---|
+| 0.5 | 0.63–0.65 | 0.81–0.83 | 95–100% | 0.89–1.16 |
+| 2.0 | 0.59–0.65 | 0.62–0.73 | 53–89% | 1.14–1.30 |
+| 4.0 | 0.53–0.57 | **0.23–0.33** | **12–26%** | 0.55–2.47 |
+
+- **Families with no device get 0 false flags.**
+- **The fixed-node co-occurrence alternative is worse:** precision 0.007–0.31 at low and medium density, and false flags up to 4/h (up to 7.4/h for no-device families).
+
+**(c) Two-stage escalation (`companion_escalation.csv`):**
+| Confirm delay | Volunteer call-outs per 1,000 bands/h (ρ 0.5 / 2 / 4) | Family phone locatable at escalation (ρ 0.5 / 2 / 4) |
+|---|---|---|
+| 0 s | 455–804 / 714–1,111 / 235–2,253 | 39–44% / 25–33% / 0% |
+| 180 s | 341–697 / 663–918 / 235–901 | 22–43% / 0–24% / 0% |
+| 300 s | **0–54** / 364–532 / 241–676 | 22–36% / 0–24% / 0% |
+
+**The false call-out load is still too high at medium and high density, even with a 5-min confirmation.** Auto-flag is therefore an **experimental extension** only.
+
+**(d) Reunion time (`reunion_sim.py`; 3,000 episodes per strategy).**
+- **Site model:** a 12 × 5 zone grid of 40 m zones, 6 help desks, node detection 0.9 per zone visit.
+- **Behavioural assumptions** (not measured; stated openly):
+  - the parent notices after U(2, 10) min;
+  - searches nearby for U(10, 30) min;
+  - the child drifts to a neighbouring zone with probability 0.3/min;
+  - bystanders find a lost child at 1/20 min;
+  - alerted volunteers find one at 1/4 min (1/3 min with an auto-flag dispatch);
+  - families follow the desk advice with probability 0.7.
+
+| Strategy | Median | 90th percentile | Within 30 min | Within 60 min |
+|---|---|---|---|---|
+| A. PA announcements + manual registers (today) | 36.7 min | 74.0 | 28.1% | 83.6% |
+| B. QR band + registry | 34.7 | 52.7 | 33.4% | 92.2% |
+| C. BLE band + last-seen trail | 33.0 | 43.7 | 36.1% | 98.7% |
+| **D. C + converge-at-desk** | **17.0** | **37.7** | **78.6%** | 98.9% |
+| E. D + co-walker family zone (family has phone) | 17.0 | 38.0 | 78.4% | 98.8% |
+| F. D + auto-flag + nearest-station action (family has phone) | 14.0 | 35.0 | 81.8% | 99.6% |
+
+- **Sensitivity:**
+  - **D's median is 14–29 min** across family compliance from 0.3 to 0.9 and manual-link probability from 0.3 to 0.8, against **36.7–38 min for A**. D wins under every combination tested.
+  - **F's median is 13–15 min** across confirmation delays of 0/180/300 s and probabilities of reaching the parents of 0.3–0.9.
+  - **F, population-wide:** 14–16 min across learnable-device shares of 0.3–0.9.
+- **F's gain over D comes from dispatching a volunteer to the child.** Parent location contributed little: at density 2 with a 3-min confirmation, the family phone was locatable 0% of the time at escalation.
+
+### 3.5 PS-03 limitations
+- **The reunion results depend on assumed behaviour.** No field data was used. This is a model, not evidence.
+- **The radio model is from the literature, not from measurements.** It is **unverified that ordinary Android phones advertise over BLE at all** (iPhones and wearables do); co-walker detection depends on this. It should be measured at the pilot.
+- **Co-walker detection is weak in dense crowds**, and the false call-out load is high.
+- **DPDP §9(3)** restricts tracking of children. The design relies on consent at issuance, opaque IDs, local buffers expiring after 60 min, and search only after a report. The exact Fourth Schedule wording is pending.
+
+---
 
 ## 4. Prototype
 
@@ -534,6 +651,9 @@ All three roles compile:
 | `ghat_scenario.py` | Speed setter only on category change; numpy box checks instead of shapely; per-id arrays; jam retries capped at 3 failed placements per second | Normal run **bit-identical**; all 5 E3 variants **identical** to the old results | Main gain in jams |
 | `qs_core.py` | Ring-buffer history, vectorised state machine and baselines | **Identical** states on all scenarios and methods | 0.6× at 6 nodes; **1.5× at 30, 2.8× at 100, 3.1× at 300 nodes** |
 | `qs_alert.py` | Parallel E2 seeds / E3 variants, slowest first | Results unchanged | E3: 5 variants in about 77 min |
+| `companion_sim.py` | Parallel configurations; simpler RSSI | Per-run results **identical** | About 3.5–4× |
+| `separation_sim.py` | Vectorised packets, naive detector, coverage | Within Monte-Carlo noise | 68 s → 20 s |
+| `reunion_sim.py` | All batches as parallel jobs with spawned seeds | Within Monte-Carlo noise | 25 s for the full run with sweeps |
 | `rimea_tests.py` | numpy box checks; pool removed (crashed on Windows) | **Identical** values | about 4 min (was 339 s) |
 
 Two bugs were found during this work and fixed: JuPedSim agent IDs are a process-wide counter, so per-id arrays must use offsets or grow; and the RiMEA pool crashed (WinError 6).
@@ -576,6 +696,9 @@ cd pushkaralu\sim
 ..\.venv\Scripts\python.exe esp32_sil.py                                          # E9 (pip install ziglang)
 ..\.venv\Scripts\python.exe analytic_model.py                                     # E11
 ..\.venv\Scripts\python.exe test_route_graph.py
+..\.venv\Scripts\python.exe separation_sim.py --skip-coverage
+..\.venv\Scripts\python.exe companion_sim.py --runs 20
+..\.venv\Scripts\python.exe reunion_sim.py --runs 3000
 cd ..\backend
 ..\.venv\Scripts\python.exe test_app.py
 ..\.venv\Scripts\python.exe app.py --mode playback --scenario surge
@@ -596,6 +719,7 @@ cd ..\firmware
 | `sim/esp32_sil.py`, `firmware/sil/sil.cpp` | E9: software-in-the-loop test of the firmware |
 | `sim/analytic_model.py` | E11: mathematical model vs simulation |
 | `firmware/include/pk_qs.h` | Route-graph QS + failure handling, shared by firmware and SIL |
+| `sim/separation_sim.py`, `sim/companion_sim.py`, `sim/reunion_sim.py` | PS-03 simulations |
 | `backend/`, `dashboard/`, `firmware/` | Prototype |
 | `docs/demo_script.md` | Demo |
 | `literature_survey.md`, `references.bib` | Literature |

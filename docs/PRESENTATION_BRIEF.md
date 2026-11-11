@@ -1,5 +1,5 @@
-# Janavahini: Safer Ghats
-### Godavari Pushkaralu 2027: PS-01 Real-Time Crowd Monitoring and Congestion Management
+# Safer Ghats, Faster Reunions
+### Godavari Pushkaralu 2027: PS-01 Crowd Monitoring · PS-03 Lost-Person Reunification
 *Team IIIT Hyderabad · RTIH × RMC Innovation Challenge*
 
 > This is the presentation version. The full methods, parameters, ablations and limitations are in `TECHNICAL_REPORT.md`.
@@ -70,29 +70,61 @@
 
 ---
 
+## PS-03: Reuniting lost children and elders, with nothing for families to carry
+
+### The problem
+- Mass gatherings separate thousands of people. At Maha Kumbh 2025, about **50,000** were reunited, **mostly women and the elderly**.
+- Many rural pilgrims have **no smartphone**, and only one family member may have a phone.
+- Facial recognition is **not allowed** for Pushkaralu.
+
+### Our solution
+| Step | What happens |
+|---|---|
+| **1. Band at entry** | **Only children and senior citizens** get a band, with a QR code, helpline and case code. No phone number is printed on it. The family gives **any reachable number** (a feature phone, relative or group leader) and is told **which help desk to go to** if separated. |
+| **2. Quiet sightings** | The same gate and road nodes from PS-01 note when a band passes. They keep only **anonymous rotating IDs**, deleted after 60 minutes, and nothing is tracked centrally. |
+| **3. Report** | The family reports at a **help desk, by missed call (IVR), or via a volunteer**. The system then finds the band's **last-seen place and trail**. |
+| **4. Meet at the right desk** | The found child is taken to the **desk nearest where they were separated**, the same desk the family was told to go to. |
+| **5. Exit watch** | If a reported band passes an exit gate, the post there is alerted. This covers a child led away by a stranger. |
+
+### Results (simulation, behaviour assumptions stated)
+| Approach | Median time to reunite | Reunited within 30 min |
+|---|---|---|
+| Today (PA announcements + registers) | **37 min** | 28% |
+| **Our design** (band + trail + meet at the right desk) | **17 min** | **79%** |
+
+- Even if only **30%** of families follow the "go to your desk" advice, the median stays **under 30 minutes**.
+- **Experimental extra:** for families whose phone the band learns, the band can flag separation **on its own**, and a volunteer goes straight to the child. That brings the median to **14 minutes**. It is still being tuned to reduce false alarms in dense crowds, so it is offered as an **extension**, not the core.
+
+### Privacy by design
+No faces and no names on the band. IDs change every few minutes, so strangers can't follow a child. Data stays on local nodes and is deleted after 60 minutes, and a search runs only when a family reports. Guardian consent is taken at band issuance, in line with the DPDP Act.
+
+---
+
 ## Prototype (to be shown live)
-- **ESP32 nodes.** The firmware is complete for all three roles and uses about 22% of the board's memory. It was tested as 244 virtual boards before going on the hardware.
+- **ESP32 nodes and a band tag.** The firmware is complete for all three roles and uses about 22% of the board's memory. It was tested as 244 virtual boards before going on the hardware.
 - **Live demo:**
   1. A simulated surge drives the real boards.
   2. We **switch off the server**, and the road node still turns amber over the radio mesh.
   3. We **unplug a node**, and the road keeps holding. The dashboard shows "NODE DOWN – send staff".
+  4. We walk the band past the nodes, then report it via IVR. The dashboard shows the **trail** and the **desk to go to**.
 - **Command-centre dashboard** and a **documented REST API** (OpenAPI) for integration.
 
 ## Pilot roadmap (Maha Shivaratri, Feb–Mar 2027 → Pushkaralu, Jun–Jul 2027)
 | Phase | What | Measured |
 |---|---|---|
 | Nov 2026 – Jan 2027 | Map routes for the Kotilingala model compartment; install counters and nodes; integrate CCTV counts and the ICCC | Counting accuracy vs manual counts |
-| Feb – Mar 2027 | **Live pilot at Maha Shivaratri** | Warning lead time, false alerts, radio reliability |
+| Feb – Mar 2027 | **Live pilot at Maha Shivaratri** (PS-01 and PS-03) | Warning lead time, false alerts, radio reliability, reunion times, how many pilgrims' phones are detectable |
 | Mar – Jun 2027 | Scale to 68 compartments, 20 junctions and 10 Nagaras; police and volunteer drills | Drill response times |
 | Jun – Jul 2027 | 12-day operation from the ICCC | Live KPIs |
 
 ## What we are honest about
-- **All results so far are from simulation.** The site layout is an **assumption** until the pilot.
+- **All results so far are from simulation.** The site layout and the family behaviour in the reunion model are **assumptions** until the pilot.
 - **The command centre with a working network is still slightly better on a surge** (peak 2.9 vs 3.3 persons/m²). That is why we propose the **hybrid**: use the command centre when it can see, and the mesh always.
 - **Two neighbouring boards failing together** (gate and junction) can still leave a gap, in 2 of 5 tests. The command centre covers that case when the network is up.
 - **The boards are not yet flashed and field-tested.** The device code has been tested in simulation.
 - **Counters need gates narrowed** to single or double file, which barricades already do at most ghats.
 - **Nodes need a power, weather and maintenance plan.** This is part of the pilot design.
+- **A parent with no phone can't be detected by any radio system.** For them, the "meet at the right desk" step is what makes the difference, and the simulation shows it works without any device.
 
 ## What we need from RMC / RTIH
 1. Kotilingala model-compartment layout and the planned pedestrian routes.
