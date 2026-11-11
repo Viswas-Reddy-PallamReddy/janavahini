@@ -102,7 +102,11 @@ def run(task):
     rp: RouteParams overrides (e.g. FAILSAFE), label: free text copied to the output,
     sensing: a SensingConfig as a dict (E12); without it the nodes see the true density,
     sensor_kills: [(node, t_s, mode), ...] density sensors that fail at t_s while the board
-    runs on (mode "naive" or "flag", see sensing.Sensing.sensor_fault)."""
+    runs on (mode "naive" or "flag", see sensing.Sensing.sensor_fault),
+    field: {"delay_s": D, "comply": c, "divert_comply": cd} (E14): police act D s after the
+    signal; holds/meters reach only a fraction c of their intended effect (control =
+    1 - c * (1 - planned control)); diversion moves only cd of the planned share change,
+    qs: QSParams overrides (E15 threshold sensitivity)."""
     scenario, method, seed, hot = task[:4]
     extra = task[4] if len(task) > 4 else {}
     g = synthetic_site()
@@ -110,7 +114,15 @@ def run(task):
     flow = SiteFlow(g, sc)
     n = g.n
     rng = np.random.default_rng(seed)
-    p = QSParams()
+    p = QSParams(**extra.get("qs", {}))
+    field = extra.get("field")
+    if field:
+        from collections import deque
+        f_delay = int(field.get("delay_s", 0))
+        f_comply = float(field.get("comply", 1.0))
+        f_div = float(field.get("divert_comply", f_comply))
+        hist_a = deque(maxlen=f_delay + 1)
+        hist_s = deque(maxlen=f_delay + 1)
     controlled = np.array([k in CONTROLLED_KINDS for k in g.kind])
     feeds = np.zeros((n, n), bool)                    # feeds[i, j]: i sends pilgrims towards j
     for j in range(n):
@@ -223,7 +235,17 @@ def run(task):
         light_changes += light != prev_light
         lit |= light > 0
         prev_light = light
-        control = CTRL[action]
+        if field:
+            # the light changes at once; the crowd responds f_delay s later and only in part
+            hist_a.append(action.copy())
+            hist_s.append(base_share if share is None else share)
+            full = len(hist_a) == f_delay + 1
+            a_app = hist_a[0] if full else np.zeros(n, int)
+            s_app = hist_s[0] if full else base_share
+            control = 1.0 - f_comply * (1.0 - CTRL[a_app])
+            share = base_share + f_div * (s_app - base_share)
+        else:
+            control = CTRL[action]
         edge_flow = flow.step(t, control, share)
 
         rho = flow.rho
