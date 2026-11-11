@@ -164,7 +164,11 @@ def run(task):
     comp_above4 = comp_above5 = any_above4 = 0
     needless = held = 0
     peak_comp = peak_any = 0.0
+    light_changes = np.zeros(n, int)
+    prev_light = np.zeros(n, int)
+    lit = np.zeros(n, bool)
     for t in range(sc.duration_s):
+        diverting = np.zeros(n, bool)
         rho = flow.rho
         meas = est if sens is not None else rho        # what the boards measure (E12) or the truth
         dead = kill_t <= t
@@ -207,10 +211,18 @@ def run(task):
                 last_branch_rho = np.where(dead[ev], last_branch_rho, branch_rho)
                 share = divert_shares(g, base_share, m.edge_threat,
                                       np.where(m.edge_room_known, branch_rho, np.inf))
+                m.set_shares(share)                           # used only with dyn_share_tau_s > 0
                 diverted = np.zeros(n, bool)
                 diverted[np.unique(g.edge_arrays()[0][share != base_share])] = True
                 action[is_junction & diverted] = ACT_NONE     # diverting instead of holding
+                diverting = is_junction & diverted
         action = np.where(controlled & ~dead, action, ACT_NONE)     # a dead board's marshals get no signal
+        # the light the marshals see: red HOLD, amber METER or DIVERT, green otherwise
+        light = np.where(action >= ACT_HOLD, 2, np.where((action == ACT_METER) | diverting, 1, 0))
+        light = np.where(controlled & ~dead, light, 0)
+        light_changes += light != prev_light
+        lit |= light > 0
+        prev_light = light
         control = CTRL[action]
         edge_flow = flow.step(t, control, share)
 
@@ -243,6 +255,9 @@ def run(task):
            "held_node_s": held, "needless_hold_node_s": needless,
            "needless_pct": round(100 * needless / held, 1) if held else 0.0,
            "exited": int(flow.exited)}
+    hours = sc.duration_s / 3600
+    out["light_changes_per_h_mean"] = round(float(light_changes[lit].mean() / hours), 1) if lit.any() else 0.0
+    out["light_changes_per_h_max"] = round(float(light_changes.max() / hours), 1)
     if sens is not None:
         out = {"sensing": sens.cfg.name, **out,
                "est_rmse_comp": round((err_sq_comp / sc.duration_s) ** 0.5, 3),

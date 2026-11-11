@@ -109,6 +109,28 @@ class StateMachine:
         return self.state.copy()
 
 
+class AsymStateMachine(StateMachine):
+    """As StateMachine, but WATCH -> NORMAL needs `watch_dwell` steps unchanged, while
+    CRITICAL -> WATCH keeps the short QSParams dwell (fast up, fast red->amber, slow amber->green)."""
+
+    def __init__(self, n, p: QSParams, watch_dwell: int):
+        super().__init__(n, p)
+        self.watch_dwell = watch_dwell
+
+    def update(self, level):
+        p = self.p
+        level = np.asarray(level)
+        target = np.where(level >= p.theta_crit, CRITICAL, np.where(level >= p.theta_watch, WATCH, NORMAL))
+        raise_ = target > self.state
+        self.dwell = np.where(raise_, 0, self.dwell + 1)
+        release = np.where(self.state == CRITICAL, p.theta_crit, p.theta_watch) - p.hysteresis
+        need = np.where(self.state == WATCH, self.watch_dwell, p.min_dwell_steps)
+        drop = ~raise_ & (target < self.state) & (self.dwell >= need) & (level < release)
+        self.state = np.where(raise_, target, np.where(drop, self.state - 1, self.state))
+        self.dwell = np.where(drop, 0, self.dwell)
+        return self.state.copy()
+
+
 @dataclass
 class QSNetwork:
     """Decentralised QS alert over a radio graph (adjacency matrix)."""
@@ -216,6 +238,22 @@ class RouteParams:
     # for more than down_report_s counts as at least WATCH even if it was calm (it may have died just
     # before its own alarm; E10)
     failsafe_escalate: bool = False
+    # v4 options (E13), all off by default so E1-E12 are unchanged
+    # dynamic shares: weight relayed threats by the shares a junction is actually using now (after
+    # diversion), smoothed with this time constant so a diversion cannot make the lights flap; 0 = planned shares
+    dyn_share_tau_s: float = 0.0
+    # fast up, slow down: the field action (the light) still rises at once, but may only drop after
+    # it has been unchanged this long; 0 = the QSParams dwell (5 s)
+    release_dwell_s: float = 0.0
+    # which drops the long dwell applies to: "all" (red->amber and amber->green) or "watch" (only
+    # amber->green; red->amber stays fast so held crowds can be metered through). E13: "all" let held
+    # crowds upstream pass 4 p/m^2 in 6 of 20 surge draws
+    release_dwell_from: str = "all"
+    # dead-node release: a held silent successor drops from CRITICAL to WATCH (METER, never NORMAL) after
+    # this much silence, but only if it is bypassed and every 2-hop backup behind it is heard and calm
+    # (level < dead_release_level, i.e. rho < 1.5 p/m^2 and not rising); 0 = never (hold until heard)
+    dead_release_s: float = 0.0
+    dead_release_level: float = 0.375
 
 
 class RouteQSNetwork:
@@ -240,23 +278,31 @@ class RouteQSNetwork:
         self.u, self.v, self.share, self.walk = graph.edge_arrays()
         self.m0 = len(self.u)                       # primary edges; 2-hop backups follow
         self.via = np.full(self.m0, -1)
+        self.via2 = np.full(self.m0, -1)            # for a 2-hop backup edge: its second edge
         if self.rp.backup:
-            bu, bv, bs, bw, bvia = [], [], [], [], []
+            bu, bv, bs, bw, bvia, bvia2 = [], [], [], [], [], []
             for e1 in range(self.m0):
                 for e2 in np.nonzero(self.u[:self.m0] == self.v[e1])[0]:
                     bu.append(self.u[e1]); bv.append(self.v[e2])
                     bs.append(self.share[e1] * self.share[e2]); bw.append(self.walk[e1] + self.walk[e2])
-                    bvia.append(e1)
+                    bvia.append(e1); bvia2.append(e2)
             if bu:
                 self.u = np.r_[self.u, bu]; self.v = np.r_[self.v, bv]
                 self.share = np.r_[self.share, bs]; self.walk = np.r_[self.walk, bw]
-                self.via = np.r_[self.via, bvia]
+                self.via = np.r_[self.via, bvia]; self.via2 = np.r_[self.via2, bvia2]
+        self.share_eff = self.share.copy()          # shares in use (dyn_share_tau_s); planned by default
         n, m = graph.n, len(self.u)
         self.n = n
         self.hist = RhoHistory(n, self.p, dt)
         self.A = np.zeros(n)
         self.sm_local = StateMachine(n, self.p)
-        self.sm_threat = StateMachine(n, self.p)
+        if self.rp.release_dwell_s > 0 and self.rp.release_dwell_from == "watch":
+            self.sm_threat = AsymStateMachine(n, self.p, watch_dwell=int(round(self.rp.release_dwell_s / dt)))
+        elif self.rp.release_dwell_s > 0:
+            from dataclasses import replace
+            self.sm_threat = StateMachine(n, replace(self.p, min_dwell_steps=int(round(self.rp.release_dwell_s / dt))))
+        else:
+            self.sm_threat = StateMachine(n, self.p)
         self.heard_L = np.zeros(m)                 # last broadcast heard over each edge (from v)
         self.heard_W = np.zeros(m)
         self.heard_age = np.full(m, np.inf)
@@ -266,6 +312,19 @@ class RouteQSNetwork:
         self.edge_threat = np.zeros(m)
         self.relayed_L = np.zeros(n)
         self.relayed_W = np.full(n, np.inf)
+
+    def set_shares(self, share_now):
+        """Tell the network the shares each node is using now (after diversion; primary edges).
+        With dyn_share_tau_s > 0 the relayed threat follows them, smoothed; otherwise ignored."""
+        tau = self.rp.dyn_share_tau_s
+        if tau <= 0:
+            return
+        m0 = self.m0
+        a = 1.0 - np.exp(-self.dt / tau)
+        self.share_eff[:m0] += a * (np.asarray(share_now, float)[:m0] - self.share_eff[:m0])
+        if len(self.u) > m0:
+            b = np.arange(m0, len(self.u))
+            self.share_eff[b] = self.share_eff[self.via[b]] * self.share_eff[self.via2[b]]
 
     def step(self, rho, link_up):
         p, rp = self.p, self.rp
@@ -281,7 +340,7 @@ class RouteQSNetwork:
         primary = self.via < 0
         m0 = self.m0
         pe = np.arange(m0)
-        w = self.share if rp.use_share else np.ones_like(self.share)
+        w = self.share_eff if rp.use_share else np.ones_like(self.share)
         ok = fresh & primary
         L_eff = self.heard_L.copy()
         branch_L = np.where(fresh, self.heard_L, 0.0)[:m0]          # per-branch level for diversion
@@ -311,6 +370,15 @@ class RouteQSNetwork:
             b_max = np.zeros(m0)
             np.add.at(b_sum, self.via[b][use_b], contrib[use_b])
             np.maximum.at(b_max, self.via[b][use_b], contrib[use_b])
+            if rp.dead_release_s > 0:
+                # dead-node release: every backup behind the silent successor is heard and calm
+                b_raw = np.zeros(m0)
+                np.maximum.at(b_raw, self.via[b][use_b], self.heard_L[b][use_b])
+                n_b = np.bincount(self.via[b], minlength=m0)
+                n_fresh = np.bincount(self.via[b][use_b], minlength=m0)
+                calm = bypassed & (n_fresh == n_b) & (b_raw < rp.dead_release_level)
+                release = held & calm & (self.heard_age[:m0] > rp.dead_release_s)
+                held_L = np.where(release, p.theta_watch, held_L)
             h = w[:m0] * held_L
             use_held = held & (~bypassed | (h >= (b_sum if rp.use_share else b_max)))
             ok[b] = use_b & ~use_held[self.via[b]]
