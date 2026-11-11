@@ -192,8 +192,49 @@ state_i  = NORMAL / WATCH / CRITICAL by θ thresholds with hysteresis and minimu
 
 ---
 
-## 7–8. PS-03 sections
-Child tags and reunification are on the `ps-03` branch.
+## 7. Child tags: proximity and separation detection (PS-03 core)
+
+| Key | Finding | Design decision |
+|---|---|---|
+| [Leith2020] | RSSI need not fall with distance. Handset model, orientation and body effects are as large as moving 2 m. | **Never convert RSSI to metres.** Use coarse states only. |
+| [Hatke2020] | Many samples plus extra information (orientation, placement) improve detection. | Aggregate RSSI over a window; use guardian-phone motion as context. |
+| [Kindt2022] | BLE discovery misses encounters because of advertising and scan duty cycles. | Size tag advertising and guardian scanning **together**, so missed packets aren't read as separation. |
+| [Januszkiewicz2018] | One blocking person ≈ 10 dB, two ≈ 15 dB; a body nearby but not blocking ≈ 1 dB. | **10–15 dB margin** before changing state. |
+| [Cotton2011] | Outdoor body-to-body links at 2.45 GHz: up to 40 dB attenuation from blocking. | Log-distance model plus a body-shadowing term; never alarm on a single dip. |
+| [Robesaat2017] | Kalman filter fusing BLE RSSI with dead reckoning: under 1 m in a lab. | 1-D Kalman on RSSI, optionally fused with guardian step count. |
+| [Smith2011] | Expired Broadcom patent: paired parent/child tags, a warning tone, then "lost" after about 10 s of missed contact, after which the child tag becomes discoverable by any device. | **Prior art for our state machine**; cite it. New in ours: rotating IDs, crowd-sourced sightings, guardian cancel. |
+| [Kolakowski2019] | BLE system that detects dementia wandering patterns. | For elderly users, add a **repetitive back-and-forth (wandering) trigger**. |
+| [Basalamah2016] | **600 BLE tags at Hajj, 10 scanning phones, 5 days: about 90% detectability**; routes reconstructed. | The strongest field evidence for our tag design. |
+| [Liu2014] | "Finding Nemo": nearby phones collaboratively locate a lost child's wearable. | Any node or phone that hears the tag reports a sighting. |
+| [Yucel2018] | Privacy-aware crowd-sourced localisation of BLE tags by clustered phones. | Design reference for privacy-preserving "crowd GPS". |
+
+**State machine, refined with the literature:**
+
+```
+NEAR ──(Kalman-RSSI below τ for ≥ N windows, OR loss rate above expected for the duty cycle)──► DRIFTING
+DRIFTING ──(persists 20–30 s; tag advertising interval 100–300 ms)──► SEPARATED: guardian device buzzes
+SEPARATED ──(guardian doesn't tap "with me" within ~60 s)──► LOST: tag bursts ID + lost flag, network alerted
+```
+
+- Measure each tag/guardian hardware pair's signal offset at pairing [Leith2020].
+- Tune the dwell times against a **target false-alarm rate per family per hour**.
+
+---
+
+## 8. Reunification practice and precedents (PS-03)
+
+| Key | What it shows |
+|---|---|
+| [Mohandes2010] | Hajj RFID wristbands identifying lost, sick or deceased pilgrims, piloted on 1,000; active RFID reads at about 81–85 m. **Offline fallback**: a band readable at any help desk. Year taken from the listing ⚠. |
+| [KumbhLostFound2025] | Maha Kumbh 2025: about 10 digital Khoya-Paya (lost-and-found) centres **using facial recognition**, social-media posts, police escalation after 12 h. Reunion counts reported inconsistently (about 20k vs about 54k), none audited. Most missing people were **women and elderly**. The 2019 plan for 40,000 RFID tags on children has no published outcome. |
+| [Basalamah2016; Liu2014] | Tag + scanner + crowd-sourcing precedent (see §7). |
+
+**Lessons:**
+- **Design for elderly people and women too**, not only children.
+- Pushkaralu forbids facial recognition, so our **tag-and-guardian-key** approach is the compliant alternative to the Kumbh 2025 model.
+- No mela has published audited reunification rates. **Propose KPIs**: median time to reunite, share reunited within 1 hour, false alarms per hour.
+
+---
 
 ## 9. Privacy, security and law
 

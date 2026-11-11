@@ -13,7 +13,7 @@ A crush at a bathing ghat builds when more people walk in than can leave. The po
 
 Decisions are made on the ESP32 nodes, so alerts keep working when the mobile network or the command centre (ICCC) fails. The ICCC gets everything through a documented REST/WebSocket API, and its commands can only add caution.
 
-> **Branches.** `main` holds PS-01. PS-03 (lost-person reunification, which reuses the same nodes) is on the [`ps-03`](../../tree/ps-03) branch.
+> **Branches.** This is the `ps-03` branch: PS-01 plus PS-03 (lost-person reunification). `main` holds PS-01 only.
 
 ## Status
 - **All results are from simulation:** the JuPedSim crowd simulator (RiMEA-verified, calibrated) and a whole-site flow model. See [`docs/TECHNICAL_REPORT.md`](docs/TECHNICAL_REPORT.md).
@@ -65,4 +65,38 @@ pio run -e gateway  -t upload --upload-port COM5
 pio run -e guardian -t upload --upload-port COM6
 cd ..\backend
 python app.py --mode hil --port COM5 --scenario surge
+```
+
+---
+
+# PS-03: Lost-person reunification (this branch)
+
+**Problem Statement 3: Lost-Person Identification and Reunification Assistance.** It reuses the PS-01 gate and road nodes, and families carry nothing.
+
+| Step | What happens |
+|---|---|
+| 1. Band at entry | Only children and senior citizens get a band: QR code, helpline and case code, but no phone number. The family gives any reachable number and is told which help desk to go to if they are separated. |
+| 2. Quiet sightings | Gate and road nodes note when a band passes. They keep only anonymous rotating IDs, deleted after 60 minutes, and nothing is tracked centrally. |
+| 3. Report | The family reports at a help desk, by missed call (IVR) or through a volunteer. The system finds the band's last-seen place and trail. |
+| 4. Meet at the right desk | The found person is taken to the desk nearest where they were separated, the same desk the family was told to go to. |
+| 5. Exit watch | If a reported band passes an exit gate, the post there is alerted. |
+
+**Simulated result:** median time to reunite **37 min** with today's public-address practice, **17 min** with band + trail + designated desk. Family behaviour in this model is an assumption until the pilot.
+
+## PS-03 files on this branch
+| Path | Contents |
+|---|---|
+| `sim/separation_sim.py` | Separation detection between a child tag and a guardian device (radio-model reference) |
+| `sim/companion_sim.py` | Co-walker inference: the tag learns the family's devices, and families wear nothing |
+| `sim/reunion_sim.py` | Time-to-reunion: today's practice vs band + registry, trail and designated desk |
+| `sim/results/reunion_*`, `separation_*`, `companion_*` | PS-03 results |
+| `submission/PS03_Concept_Note.{html,pdf}`, `submission/PS03_Reunification.mp4` | PS-03 submission |
+
+```
+cd sim
+..\.venv\Scripts\python separation_sim.py --skip-coverage
+..\.venv\Scripts\python companion_sim.py --runs 20
+..\.venv\Scripts\python reunion_sim.py --runs 3000
+cd ..\backend
+..\.venv\Scripts\python test_app.py
 ```

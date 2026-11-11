@@ -1,0 +1,5 @@
+density_p_per_m2,naive_false_alarms_per_family_hour,ours_guardian_buzz_false_per_family_hour,ours_network_LOST_false_per_family_hour,naive_median_detect_s,ours_median_buzz_s,ours_median_LOST_s,ours_missed_pct,family_hours_simulated
+0.5,1.6,0.0,0.0,0.0,43.0,59.0,0.0,20.0
+2.0,76.0,0.0,0.0,0.0,18.0,26.5,0.0,20.0
+4.0,143.9,0.0,0.0,0.0,13.5,23.5,0.0,20.0
+6.0,145.8,0.0,0.0,0.0,11.0,29.5,0.0,20.0
