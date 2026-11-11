@@ -100,7 +100,9 @@ def run(task):
     """task: (scenario, method, seed, hotspots[, extra]); extra may hold
     kills: [(node, t_s), ...] boards that die at t_s (no radio, no signal to their marshals),
     rp: RouteParams overrides (e.g. FAILSAFE), label: free text copied to the output,
-    sensing: a SensingConfig as a dict (E12); without it the nodes see the true density."""
+    sensing: a SensingConfig as a dict (E12); without it the nodes see the true density,
+    sensor_kills: [(node, t_s, mode), ...] density sensors that fail at t_s while the board
+    runs on (mode "naive" or "flag", see sensing.Sensing.sensor_fault)."""
     scenario, method, seed, hot = task[:4]
     extra = task[4] if len(task) > 4 else {}
     g = synthetic_site()
@@ -214,6 +216,9 @@ def run(task):
 
         rho = flow.rho
         if sens is not None:
+            for node, t_s, mode in extra.get("sensor_kills", []):
+                if t == t_s:
+                    sens.sensor_fault([node], mode)
             est = sens.update(t, edge_flow, flow.last_arrivals, flow.last_exit_out, rho)
             e = est - rho
             err_sq_comp += float(np.mean(e[flow.comps] ** 2))
@@ -243,6 +248,13 @@ def run(task):
                "est_rmse_comp": round((err_sq_comp / sc.duration_s) ** 0.5, 3),
                "est_max_abs_err": round(err_max, 2), "est_max_abs_err_dense": round(err_max_dense, 2),
                "blind_nodes": int(sens.blind.sum()), "counted_nodes": int(sens.counted.sum())}
+        if "kills" in extra or "sensor_kills" in extra:
+            out.update({"label": extra.get("label", ""), "option": extra.get("option", method),
+                        "t_first_alert": extra.get("t_first_alert"),
+                        "killed": " ".join(f"{g.names[nd]}@{t_s}" for nd, t_s in extra.get("kills", [])),
+                        "sensor_killed": " ".join(f"{g.names[nd]}@{t_s}:{md}"
+                                                  for nd, t_s, md in extra.get("sensor_kills", [])),
+                        "nodes_reporting_down": int(ever_down.sum()), "first_act_s": first_act})
         print(json.dumps(out), flush=True)
         return out
     if extra:

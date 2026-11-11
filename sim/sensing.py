@@ -47,6 +47,7 @@ class SensingConfig:
     obs_every_s: int = 60
     obs_rel_sd: float = 0.10            # 10 %: an edge camera; RF attenuation is noisier
     obs_bias_sd: float = 0.05
+    obs_bias_mean: float = 0.0          # systematic error shared by all density sensors (< 0: undercount)
     obs_abs_sd: float = 0.05
     obs_dropout: float = 0.0
     b_walk_sd: float = 2e-5             # how fast the counter drift may change (p/m^2/s per sqrt(s))
@@ -99,7 +100,7 @@ class Sensing:
         self.beta_e = rng.normal(0, cfg.count_bias_sd, m)
         self.beta_src = rng.normal(0, cfg.count_bias_sd, self.n)
         self.beta_exit = rng.normal(0, cfg.count_bias_sd, self.n)
-        self.gamma = rng.normal(0, cfg.obs_bias_sd, self.n)
+        self.gamma = rng.normal(cfg.obs_bias_mean, cfg.obs_bias_sd, self.n)
         self.phase = rng.integers(0, max(1, cfg.obs_every_s), self.n)
 
         # Kalman state: the site starts empty and that is known
@@ -108,6 +109,23 @@ class Sensing:
         self.P00 = np.full(self.n, 1e-4)
         self.P01 = np.zeros(self.n)
         self.P11 = np.full(self.n, (5 * cfg.b_walk_sd) ** 2)
+        self.flagged = np.zeros(self.n, bool)          # density sensor failed, firmware knows it
+        self.frozen = np.zeros(self.n)
+
+    WATCH_RHO = 2.4      # s = rho / rho_crit = 0.6: the WATCH threshold (qs_core QSParams)
+
+    def sensor_fault(self, nodes, mode):
+        """The density sensor of `nodes` stops (the board itself keeps running).
+        naive: the node carries on with what is left: counters if it has them (dead
+               reckoning), otherwise it is blind and reports 0 ("silent but calm").
+        flag:  the firmware detects the fault and reports max(last estimate, WATCH level)
+               until the sensor is back: unknown is not safe."""
+        nodes = np.asarray(nodes, int)
+        self.observed[nodes] = False
+        self.blind = ~self.counted & ~self.observed
+        if mode == "flag":
+            self.flagged[nodes] = True
+            self.frozen[nodes] = np.maximum(self.rho[nodes], self.WATCH_RHO)
 
     def _count(self, true, beta, active):
         c = true * (1 + beta) + self.rng.normal(0, 1, true.shape) * self.cfg.count_noise * np.sqrt(np.maximum(true, 0))
@@ -154,6 +172,8 @@ class Sensing:
             P11 = np.where(due, nP11, P11)
         self.P00, self.P01, self.P11 = P00, P01, P11
         self.rho = np.where(self.blind, 0.0, np.maximum(self.rho, 0.0))
+        if self.flagged.any():
+            self.rho = np.where(self.flagged, np.maximum(self.rho, self.frozen), self.rho)
         return self.rho
 
 
@@ -179,3 +199,25 @@ CONFIGS = {
     # counters at gates/exits only and nothing else: roads, junctions and Nagaras are blind
     "narrow-only": SensingConfig(name="narrow-only", counters="narrow", density="none", count_bias_sd=0.02),
 }
+
+# E12b sweep: the realistic layout (narrow-2%+cam10) with one property of the density
+# reading changed at a time, to find where it stops being safe (a hardware spec)
+_BASE = CONFIGS["narrow-2%+cam10"]
+
+
+def _v(name, **kw):
+    from dataclasses import replace
+    return name, replace(_BASE, name=name, **kw)
+
+
+SWEEP = dict([
+    _v("cam30", obs_every_s=30), _v("cam60", obs_every_s=60), _v("cam120", obs_every_s=120),
+    _v("cam300", obs_every_s=300),
+    _v("cam10-noise20", obs_rel_sd=0.20), _v("cam10-noise30", obs_rel_sd=0.30),
+    _v("cam10-drop20", obs_dropout=0.2), _v("cam10-drop50", obs_dropout=0.5),
+    _v("cam10-under10", obs_bias_mean=-0.10), _v("cam10-under20", obs_bias_mean=-0.20),
+    _v("cam10-bias10", obs_bias_sd=0.10), _v("cam10-bias20", obs_bias_sd=0.20),
+    _v("rf30", obs_every_s=30, obs_rel_sd=0.25, obs_bias_sd=0.10, obs_dropout=0.2),
+    _v("rf60", obs_every_s=60, obs_rel_sd=0.25, obs_bias_sd=0.10, obs_dropout=0.2),
+])
+ALL = {**CONFIGS, **SWEEP}
