@@ -139,7 +139,7 @@ a { color: var(--river); }
         <thead><tr><th>Component</th><th class="num">₹ (retail, before GST)</th></tr></thead>
         <tbody>
           <tr><td>ESP32 board with LoRa radio (SX1276) [1]</td><td class="num">1,650</td></tr>
-          <tr><td>Two time-of-flight counting sensors (VL53L1X) [2]; ₹0 where CCTV counts exist</td><td class="num">960 – 1,980</td></tr>
+          <tr><td>Two time-of-flight counting sensors (VL53L1X) [2]; gate and exit nodes only. Wide-road nodes use existing CCTV (₹0) or an edge camera box (vendor quote)</td><td class="num">960 – 1,980</td></tr>
           <tr><td>Three-colour IP65 signal tower [3]</td><td class="num">630 – 1,560</td></tr>
           <tr><td>IP65 enclosure [4]</td><td class="num">110 – 300</td></tr>
           <tr><td>Power: mains adapter + backup battery (our estimate)</td><td class="num">1,000 – 2,000</td></tr>
@@ -174,7 +174,7 @@ a { color: var(--river); }
       <table class="gantt">
         <thead><tr><th>Phase</th><th>Nov</th><th>Dec</th><th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th></tr></thead>
         <tbody>
-          <tr><td>0 · Flash and bench-test boards; demo (12 Nov)</td><td class="on"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>0 · Flash and bench-test boards; demo (24 Nov)</td><td class="on"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
           <tr><td>1 · Route map and install at the Kotilingala model compartment; connect CCTV counts and ICCC</td><td class="on"></td><td class="on"></td><td class="on"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
           <tr><td>2 · Live pilot at Maha Shivaratri</td><td></td><td></td><td></td><td class="pilot"></td><td class="pilot"></td><td></td><td></td><td></td><td></td></tr>
           <tr><td>3 · Scale to 68 compartments, 20 junctions, 10 Nagaras; police and volunteer drills</td><td></td><td></td><td></td><td></td><td class="on"></td><td class="on"></td><td class="on"></td><td class="on"></td><td></td></tr>
@@ -224,7 +224,8 @@ a { color: var(--river); }
           <tr><td>Two neighbouring boards failing together</td><td>ICCC covers the gap when the network is up; staff alerted to every silent node</td></tr>
           <tr><td>Precautionary slowing in near-misses (about 1 in 4)</td><td>Thresholds tuned on pilot data</td></tr>
           <tr><td>Power, weather and theft</td><td>IP65 enclosures, backup batteries, mounting on existing barricades and poles; plan finalised in the pilot</td></tr>
-          <tr><td>Counting accuracy at wide gates</td><td>Barricades narrow gates to single or double file; CCTV counts used where available</td></tr>
+          <tr><td>Counting on wide roads; counter drift</td><td>Counters only where barricades already form lanes; camera density on wide roads; a Kalman filter on each node removes counter drift (simulated: 100 of 100 surge draws safe)</td></tr>
+          <tr><td>Camera density too infrequent or too noisy</td><td>Requirement: a reading at least every 2 minutes with ≤ 20% error; checked against manual counts in the pilot</td></tr>
         </tbody>
       </table>
     </div>

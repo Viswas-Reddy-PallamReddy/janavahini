@@ -21,10 +21,12 @@
 | PS-01 node (board) failures | ✅ found a real weakness (one dead board ≈ no system), fixed in firmware in 3 steps, tested in SIL, JuPedSim and the site model; remaining gaps: 2 adjacent dead boards, a dead approach-road board (§2.8) |
 | PS-01 hybrid ICCC + mesh | ✅ (§2.9) |
 | Mathematical model checked against the simulations | ✅ E11 (§2.10) |
+| PS-01 realistic sensing (biased counters, noisy camera readings, Kalman fusion) | ✅ E12 (§2.11): counters alone fail 15 of 20 surges; the fused layout is safe in **100 of 100** surge and 100 of 100 blocked-exit draws; sensor requirement derived; camera and board failures tested |
+| PS-01 firmware v4 options (light timing, dynamic shares, dead-node release) | ✅ E13 (§2.12): a 120 s dwell on every light drop is **unsafe** (held crowds upstream pass 4 p/m²); amber-only slowing is safe and cuts light changes ~35%; the other two are neutral |
 | ESP32 firmware (3 roles) | ✅ compiles. Runs the **route-graph QS** with node-failure handling. ✅ Firmware code tested in software-in-the-loop (SIL) against the Python model: 100% identical (§4.1).  The final change (held + bypassed = the larger level) was re-checked on 31 Oct under WSL2 `g++`: still 100% identical. ⚠ Not yet flashed or tested on boards |
 | Backend (REST API for the command centre) + dashboard | ✅ end-to-end tests pass (`backend/test_app.py`) |
-| Concept notes, pitch decks, demo videos | ❌ to do |
-| Eligibility of a student team (Stage 1 asks for "entity registration") | ⚠ email to RTIH pending |
+| Concept notes, pitch decks, demo videos | ✅ submitted 7 Nov; concept note, architecture and budget updated 11 Nov with E12 |
+| Eligibility of a student team | ✅ the official guidelines admit students who are Indian citizens (checked 11 Nov) |
 | DPDP Rules 2025 Gazette check (child tracking, §9) | ⚠ pending |
 
 ---
@@ -91,7 +93,7 @@ A Kotilingala-style compartment. The dimensions are **assumed** until RTIH share
   - flow collapse, stop-and-go waves and crowd turbulence come 10–30 min before a disaster (Helbing 2007, Johansson 2008).
 
 ### 2.2 Architecture
-- **Sensing:** a non-camera line counter at each gate or road segment (thermal array or ToF, gates narrowed to single or double file). **Or** density from existing CCTV/AI counts, since the algorithm takes density from any source.
+- **Sensing (revised after E12, §2.11):** line counters (ToF, shaded) only at gates and exits, where barricades already form lanes; on wide roads a density reading from existing CCTV or an edge camera wired to the node; a 2-state Kalman filter per node fuses them. The alert algorithm takes density from any source.
 - **Node:** an ESP32 running the alert algorithm locally, with a 3-colour output.
 - **Mesh:** ESP-NOW for short hops, LoRa for long hops. LoRaWAN uplink is unsuitable for low-latency alerts (Adelantado 2017), so we use peer-to-peer.
 - **Command centre:** a FastAPI backend that aggregates for the ICCC, with documented REST/OpenAPI at `/docs`. **Decisions never depend on it.**
@@ -278,7 +280,7 @@ With the backhaul cut at 250 s, the centralised method warned the road **0%** of
 
 ### 2.7 PS-01 limitations (state these openly)
 - **Repeated runs are few.** E3 has 5 seeds of one scenario and E8 has 20 scenario draws. NIST TN 1822-style convergence is shown only informally, through the small spread in E3.
-- **Perfect sensing:** inputs are exact simulated densities. Counting noise, dropouts and drift are untested. Node *failure* is now tested (§2.8).
+- **Sensing (E1–E11):** inputs are exact simulated densities. Imperfect sensing is tested at site scale in E12 (§2.11); the sensor errors there are modelled, not measured, and the JuPedSim compartment model (E3) has not yet been rerun with sensor errors.
 - **Site scale uses a macroscopic flow model and an invented layout.** The compartment geometry is assumed.
 - **Route shares at junctions are assumed known.** In the field: planned shares, updated from gate in/out counts.
 - **Over-alerting in near-miss draws** (above): 4–6 of 20 draws hold where no place would have passed 3.5 p/m².
@@ -408,12 +410,77 @@ Every prediction is listed against the matching measurement in `e11_analytic_vs_
 **M4: alarm stability.**
 - **Upper bound.** A state can only drop after MIN_DWELL = 5 steps, so each node changes state at most once per 6 s (≤ 600 per hour).
 - **Measured:** worst node in SIL 16.8 per hour; road command in the E3 closed loop 38.9 per hour on average (max 52.8). Mostly WATCH ↔ CRITICAL while the hold rate meters the surge.
+- **Site scale (E13, light seen by marshals, per lit node):** about 20 changes per hour (worst node 73–86) with the deployed firmware; about 13 with amber-only slow release (§2.12).
 - **False alerts:** on a normal day 0, as predicted (E4). ρ stays below 2.4, so s = ρ/4 < 0.6, and the rate term is off below the 1.5 p/m² floor.
 
 **M5: radio capacity.**
 - **ESP-NOW.** A 25-byte broadcast occupies about 720 µs at 1 Mbit/s. At 1 message per second that loads the channel by 0.7% with 10 boards in range, 3.6% with 50 and 7.2% with 100.
 - **LoRa SF7 / 125 kHz.** One message takes 61.7 ms (Semtech AN1200.13). Under ALOHA (≤ 18% usable) one channel carries **only about 2 boards** sending every second, or about 29 sending every 10 s or on a state change. Design consequence: ESP-NOW for neighbours, LoRa only for long hops, sending on change.
 - **Measured traffic:** 24.4 bytes per board per second in SIL (model 25; the loop runs slightly slower than 1 s).
+
+### 2.11 Realistic sensing (E12, `sim/sensing.py`, `sensing_experiment.py`, `sensing_failures.py`)
+
+**Why.** E1–E11 gave every node the true density. Reviewers rightly asked: (1) occupancy computed as in − out drifts without bound; (2) line counters need lanes, and approach roads are 8–40 m wide; (3) the VL53L1X loses most of its range in direct sun (datasheet: 73 cm in long mode at 200 kcps/SPAD); (4) a density feed that arrives through the ICCC is lost when the network fails.
+
+**Sensing model** (site scale, per node, every second):
+- **Line counters** on a boundary: counted = true crossings × (1 + β) + N(0, 0.3·√crossings); β is a fixed per-counter bias, β ~ N(0, 2 % or 5 %). A counter on edge i → j is "out" for i and "in" for j. Placement: *all* boundaries (the idealised layout), or *narrow* ones only (≤ 6 m: junction → gate, gate → compartment, compartment → exit, exit outflow), since wide roads cannot be line-counted without lanes.
+- **Density reading** (edge camera wired to the node, existing CCTV, or RF link attenuation): every T s (staggered per node), z = ρ·(1 + γᵢ)·(1 + ε) + N(0, 0.05); γᵢ ~ N(μ, σ_γ) fixed per node, ε ~ N(0, σ_rel); missing with probability p_drop.
+- **Estimator:** a 2-state Kalman filter per node, x = [ρ, b], b the drift of the counted net flux. Predict ρ ← ρ + (in − out)/A − b; correct with z when a reading arrives (this removes accumulated drift and learns b). Nodes without full counter coverage run a random walk corrected by z; nodes with neither sensor are blind and report 0. Scalar operations only, so it ports to the firmware header.
+- **Checks:** with "truth" sensing E12 reproduces E8 exactly (route QS and hybrid, both scenarios). Unit tests (`test_sensing.py`): dead reckoning drifts exactly as β·q·T/A predicts (1.8 p/m² after 1 h at 5 % on 6 p/s into 600 m²); the filter keeps the error ≤ 0.35 p/m², beats the camera alone, and learns b on average.
+
+**E12: sensing set-ups, 20 draws × 2 scenarios** (route QS = the mesh alone, 30 % link loss; hybrid = ICCC + mesh). Surge:
+
+| Sensing | Route QS safe | Worst peak | Draws with needless holds | Hybrid safe | Est. RMSE (compartments) |
+|---|---|---|---|---|---|
+| Perfect (E8) | 20/20 | 3.57 | 4 | 20/20 | 0 |
+| Counters everywhere, 2 % bias, no density reading | **5/20** | 5.07 | 20 | 20/20 (needless holds 74 %, throughput −16 %) | 0.083 (max error where dense 5.5) |
+| Counters everywhere, 5 % bias | **2/20** | 5.03 | 20 | 20/20 (needless 90 %, throughput −34 %) | 0.164 (max 9.1) |
+| Counters (5 %) + camera every 60 s, fused | 20/20 | 3.57 | 6 | 20/20 | 0.055 |
+| **Counters at gates/exits (2 %) + camera every 10 s, fused** | **20/20** | **3.57** | 5 | 20/20 | 0.039 |
+| Same, 5 % counter bias | 20/20 | 3.57 | 5 | 20/20 | 0.039 |
+| Same, RF attenuation instead of camera (σ_rel 25 %, σ_γ 10 %, 20 % lost) | 20/20 | **4.00** | 7 | 20/20 | 0.119 |
+| Cameras only, every 10 s | 20/20 | 3.57 | 6 | 20/20 | 0.051 |
+| Counters at gates/exits only, wide areas unsensed | **4/20** | 5.07 | 20 | 20/20 | 0.083 |
+
+Blocked exit: route QS is safe in 20/20 with every set-up, but counters without a density reading make 90–96 % of holds needless.
+
+**E12d: 100 draws** (route QS): perfect sensing 100/100 surge (worst 3.57) and 100/100 blocked (2.44); the realistic layout (counters at gates/exits + camera every 10 s) **100/100 surge (worst 3.57) and 100/100 blocked (2.86)**. 100/100 gives a two-sided 95 % Clopper–Pearson lower bound of 96.4 % (20/20: 83.2 %).
+
+**E12b: how good the density reading must be** (realistic layout, surge, route QS, 20 draws; one property changed at a time):
+
+| Density reading | Safe | Worst peak |
+|---|---|---|
+| every 10 / 30 / 60 / 120 s | 20/20 each | 3.57 |
+| every 300 s | 20/20 | 3.71 |
+| 20 % / 50 % of readings lost | 20/20 | 3.57 |
+| per-camera bias σ_γ 10 % / 20 % | 20/20 | 3.57 |
+| all cameras undercount 10 % / 20 % | 20/20 | 3.70 / 3.90 |
+| noise σ_rel 20 % | 20/20 | 3.69 |
+| **noise σ_rel 30 %** | **18/20** (up to 624 s above 4) | **4.45** |
+| **RF at 30 s / 60 s** (σ_rel 25 %, σ_γ 10 %, 20 % lost) | **19/20** | 4.16 / 4.11 |
+
+**Requirement for the hardware:** a density reading at least every 120 s with ≤ 20 % error per reading. Losing readings matters far less than noisy ones. RF attenuation is a fallback only, and only at 10 s.
+
+**E12c: failures under the realistic layout** (deployed firmware: hold + 2-hop backup + escalation; 5 surge and 4–5 blocked draws; at the first alert):
+- **Boards die** (as E10): compartment, gate, junction, road 5/5 each (road was 4/5 in E10); gate + junction 3/5 (the known gap, covered by the ICCC); 5 / 10 / 20 % at random 5/5, 4/5, 4/5. Blocked exit 4/4 in every case. Imperfect sensing does not weaken failure handling.
+- **A camera fails while its board runs on**, two firmware behaviours: *naive* (dead-reckon on counters where present, else blind = 0) and *flag* (report max(last estimate, WATCH level)). Safe in **every** case (compartment, gate, junction, road; 40 runs). Flagging holds more (road peak up to 3.95); recommended rule: keep counting where counters exist, report at least WATCH only where they do not.
+
+### 2.12 Firmware v4 options (E13, `sim/v4_experiment.py`)
+
+Options in `qs_core.RouteParams` (all off by default; E1–E12 reproduce): **slow release** (a light may only drop after 120 s unchanged), **amber-only slow release** (only amber → green waits 120 s; red → amber stays at 5 s), **dynamic shares** (relayed threats follow a junction's current, diverted shares, smoothed with τ = 30 s), **dead-node release** (a silent successor held at CRITICAL drops to WATCH after 180 s if every 2-hop backup behind it is heard and calm, level < 0.375). Part A: 20 draws × 2 scenarios × perfect/realistic sensing. Part B: E12c board failures, realistic sensing, 5 draws.
+
+| Option | Surge (A) | Blocked (A) | Board failures (B, surge) | Light changes / lit node / h |
+|---|---|---|---|---|
+| Deployed | 20/20, worst 3.57 | 20/20 | as E12c | ~20 |
+| **Slow release (all drops)** | **14–15/20**, worst 4.85 | 20/20 | worse in every case (gate 2/5, junction 2/5, gate+junction 0/5) | ~10 |
+| Amber-only slow release ("v4b" with the two below) | 20/20, worst 3.57 | 20/20 | same as deployed except dead road board 4/5 (deployed 5/5) | **~13 (−35 %)** |
+| Dynamic shares | identical | identical | – | ~20 |
+| Dead-node release | identical | identical | identical | ~20 |
+
+- **Slow release is unsafe.** In every failing draw the compartments stayed below 2.5 p/m²; the crush was upstream, where a red hold lasting ≥ 120 s piled held pilgrims above 4 p/m² (the "hold where there is buffer" lesson of §2.6, from the other side). Red → amber must stay fast so held crowds can be metered.
+- **Amber-only slow release** keeps the lights calmer with no loss in normal operation, but costs one draw when the approach road's board dies. It is offered as a pilot-tunable option, not the default.
+- **Dynamic shares and dead-node release had no effect** here: the share-weighted sum already tracks diversion closely, and in a surge the nodes behind a dead board are never calm, so the release correctly never fires. After random failures, the needless holds (74–95 %) come from the WATCH floor of "unknown is not safe", which by design is never released to green without the board or an operator.
+- **Correction:** the stored E8 "route-qs fail-safe" row predates later failure-handling fixes; current code gives peak 3.40 (stored 3.49) on seed 0. Conclusions are unchanged; E8 will be regenerated.
 
 ---
 
@@ -551,11 +618,12 @@ Every parallel task carries its own seed from `np.random.SeedSequence(seed).spaw
 ---
 
 ## 6. Risks and open items before submission
-1. **Eligibility of a student team** (Stage 1 "entity registration"). Email innovationchallenge@rtih.co.in; fallback: apply via the institution or its incubator.
+1. **Kalman filter in the firmware:** port `sensing.py`'s estimator to `pk_qs.h` and re-run the SIL equivalence (E9).
 2. **DPDP Rules 2025 Fourth Schedule** wording (Gazette G.S.R. 846(E)).
 3. **Kotilingala model-compartment specs:** re-parameterise the geometry when received.
 4. **Hardware:** flash and range-test the boards (the route-graph QS and failure handling are in the firmware).
-5. **Statistics:** more seeds and scenarios for E3 (5 seeds of one surge so far).
+5. **Statistics and sensing at compartment scale:** E3 has 5 seeds of one surge, with perfect sensing; site scale now has 100 draws with realistic sensing (E12d). Rerun E3 in JuPedSim with in/out counts taken from agent trajectories.
+5a. **Sensor errors are modelled, not measured:** bench-test the VL53L1X in sun and shade, and measure camera density error against manual counts in the pilot.
 6. **LoRa duty:** at SF7 one channel carries only about 2 long-hop boards sending every second (§2.10 M5). Long hops must send on state change or every 10 s (about 29 boards per channel).
 7. **Unverified citations (⚠):** IMO MSC.1/Circ.1533 number; the IIT Madras PRL paper; Legion's owner; Fisheye State Routing and TAG (if cited).
 8. **Android BLE advertising prevalence:** a pilot KPI.
@@ -576,6 +644,13 @@ cd pushkaralu\sim
 ..\.venv\Scripts\python.exe esp32_sil.py                                          # E9 (pip install ziglang)
 ..\.venv\Scripts\python.exe analytic_model.py                                     # E11
 ..\.venv\Scripts\python.exe test_route_graph.py
+..\.venv\Scripts\python.exe test_sensing.py
+..\.venv\Scripts\python.exe sensing_experiment.py --workers 6                      # E12, 20 draws
+..\.venv\Scripts\python.exe sensing_experiment.py --workers 6 --tag sweep --methods route-qs --scenarios site-surge --configs narrow-2%+cam10 cam30 cam60 cam120 cam300 cam10-noise20 cam10-noise30 cam10-drop20 cam10-drop50 cam10-under10 cam10-under20 cam10-bias10 cam10-bias20 rf30 rf60   # E12b
+..\.venv\Scripts\python.exe sensing_failures.py --workers 6                        # E12c
+..\.venv\Scripts\python.exe sensing_experiment.py --workers 6 --tag draws100 --methods route-qs --seeds 0 1 ... 99 --configs truth narrow-2%+cam10   # E12d
+..\.venv\Scripts\python.exe v4_experiment.py --workers 6                           # E13
+# long runs: start them inside tmux in WSL (they resume from results/*/*.jsonl if stopped)
 cd ..\backend
 ..\.venv\Scripts\python.exe test_app.py
 ..\.venv\Scripts\python.exe app.py --mode playback --scenario surge
@@ -595,6 +670,9 @@ cd ..\firmware
 | `sim/failure_experiment.py` | E10: board failures at critical places, site scale |
 | `sim/esp32_sil.py`, `firmware/sil/sil.cpp` | E9: software-in-the-loop test of the firmware |
 | `sim/analytic_model.py` | E11: mathematical model vs simulation |
+| `sim/sensing.py`, `sim/test_sensing.py` | Sensing layer (counters, density readings, 2-state Kalman filter, sensor faults) and its unit tests |
+| `sim/sensing_experiment.py`, `sim/sensing_failures.py` | E12, E12b, E12d; E12c (failures under realistic sensing) |
+| `sim/v4_experiment.py` | E13: firmware v4 options |
 | `firmware/include/pk_qs.h` | Route-graph QS + failure handling, shared by firmware and SIL |
 | `backend/`, `dashboard/`, `firmware/` | Prototype |
 | `docs/demo_script.md` | Demo |

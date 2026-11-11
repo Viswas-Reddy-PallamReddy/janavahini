@@ -19,7 +19,7 @@
 ### How it works (3 parts)
 | Part | What | Why |
 |---|---|---|
-| **1. Counters** | Camera-free counters at gates and roads, **or the existing CCTV/AI counts** | Know how full each place is, with no faces captured |
+| **1. Sensing** | Line counters at gates and exits (where barricades already form lanes), **density from existing CCTV or an edge camera** on wide roads, fused on the node | Know how full each place is, without counting errors piling up; counts only, no faces |
 | **2. Route map** | A one-time map of which road feeds which junction and ghat | Warn **only** the places that feed the problem |
 | **3. Alert relay** | Each counter passes warnings to the counters feeding it, over a low-cost radio mesh | Works **without** the control room |
 
@@ -29,7 +29,7 @@
 
 ### How we tested it (four independent checks)
 1. **Crowd simulator.** We used **JuPedSim**, an open-source crowd simulator from Germany's Forschungszentrum Jülich. Our model of it passes the **RiMEA** international verification tests and is **calibrated** to standard walking-speed data. Every result was **repeated over 5 random seeds**.
-2. **Whole site.** A flow model of **68 compartments, 20 junctions and 10 Nagaras**, tested on **20 different surge and blockage scenarios**.
+2. **Whole site.** A flow model of **68 compartments, 20 junctions and 10 Nagaras**, tested on **20 different surge and blockage scenarios**, then on **100 each with realistic, imperfect sensors**.
 3. **The actual device code.** The ESP32 alert code was run as **244 virtual boards** over a simulated radio, losing 30% of messages. Its decisions matched our design model in **100%** of 1.8 million board-seconds.
 4. **Mathematics.** A one-equation model of a filling compartment predicts the simulator's results without being fitted to them: danger at **670 s** (simulator: 672 s), peak with our system **3.24** (simulator: 3.28).
 
@@ -65,7 +65,8 @@
 - **Route-aware:** warns the right places, not everywhere nearby.
 - **Resilient:** decisions are made at the gates themselves, so a network failure doesn't stop them. A dead device is covered by its neighbours and reported to staff.
 - **Makes the ICCC stronger, doesn't replace it.** When the network is up, the command centre's decisions are used. When the network fails (which is exactly when mass gatherings overload it), the mesh carries on.
-- **Camera-free and privacy-preserving**, and it can **use the existing CCTV counts**.
+- **Privacy-preserving:** cameras count on the device; counts only, no stored video. It **uses the existing CCTV** where available.
+- **Tested against realistic sensors:** counters alone fail 15 of 20 surge tests (their error piles up); counters + camera readings fused on the node are safe in **100 of 100**.
 - **Integrates:** a documented API feeds the RMC command centre's dashboard.
 
 ---
@@ -91,7 +92,7 @@
 - **The command centre with a working network is still slightly better on a surge** (peak 2.9 vs 3.3 persons/m²). That is why we propose the **hybrid**: use the command centre when it can see, and the mesh always.
 - **Two neighbouring boards failing together** (gate and junction) can still leave a gap, in 2 of 5 tests. The command centre covers that case when the network is up.
 - **The boards are not yet flashed and field-tested.** The device code has been tested in simulation.
-- **Counters need gates narrowed** to single or double file, which barricades already do at most ghats.
+- **Counters work only in lanes,** so they go only where barricades already form them (gates, exits). Wide roads need a camera density reading at least every 2 minutes with ≤ 20% error; sensor errors are modelled until the pilot measures them.
 - **Nodes need a power, weather and maintenance plan.** This is part of the pilot design.
 
 ## What we need from RMC / RTIH
