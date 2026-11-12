@@ -30,6 +30,8 @@ NODES = [  # area, counted, observed, fault (t, mode)
     (600.0, True, True, (1500, "flag")),
     (7500.0, False, True, (2000, "naive")),
 ]
+# boundary width (m) -> physics-based random walk 1.22 x width / area; 0 = legacy fixed walk (last node)
+WIDTH = [20.0, 20.0, 30.0, 25.0, 20.0, 0.0]
 
 
 def make_inputs(seed=7):
@@ -61,6 +63,9 @@ def reference(cin, cout, due, z, cfg):
     state = (np.zeros(n), np.zeros(n), np.full(n, 1e-4), np.zeros(n), np.full(n, (5 * cfg.b_walk_sd) ** 2))
     flagged = np.zeros(n, bool)
     frozen = np.zeros(n)
+    from route_graph import PEAK_SPECIFIC_FLOW
+    w = np.array(WIDTH)
+    rw = np.where(w > 0, PEAK_SPECIFIC_FLOW * w / np.maximum(area, 1e-9), cfg.rw_sd)
     out = np.zeros((T, n))
     for k in range(T):
         for i, (*_, fault) in enumerate(NODES):
@@ -70,7 +75,7 @@ def reference(cin, cout, due, z, cfg):
                     flagged[i] = True
                     frozen[i] = max(state[0][i], Sensing.WATCH_RHO)
         blind = ~counted & ~observed
-        state = kf_step(state, cin[k], cout[k], area, counted, due[k] & observed, z[k], blind, cfg)
+        state = kf_step(state, cin[k], cout[k], area, counted, due[k] & observed, z[k], blind, cfg, rw=rw)
         rho = np.where(flagged, np.maximum(state[0], frozen), state[0])
         state = (rho, *state[1:])
         out[k] = rho
@@ -85,8 +90,8 @@ def firmware(cin, cout, due, z):
                        check=True)
         with open(d / "in.txt", "w") as f:
             f.write(f"{T} {len(NODES)}\n")
-            for a, c, o, _ in NODES:
-                f.write(f"{a} {int(c)} {int(o)}\n")
+            for (a, c, o, _), w in zip(NODES, WIDTH):
+                f.write(f"{a} {int(c)} {int(o)} {w}\n")
             for k in range(T):
                 for i, (*_, fault) in enumerate(NODES):
                     fl = 0

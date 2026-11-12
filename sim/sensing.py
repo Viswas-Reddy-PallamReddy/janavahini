@@ -51,12 +51,13 @@ class SensingConfig:
     obs_abs_sd: float = 0.05
     obs_dropout: float = 0.0
     b_walk_sd: float = 2e-5             # how fast the counter drift may change (p/m^2/s per sqrt(s))
-    rw_sd: float = 0.01                 # density change between readings at uncounted nodes (p/m^2/s)
-    # > 0: the uncounted nodes' random walk follows the physics instead of rw_sd: density cannot change
+    rw_sd: float = 0.01                 # legacy fixed random walk (used only when rw_flow_frac = 0)
+    # uncounted nodes' random walk follows the physics (default since E16): density cannot change
     # faster than a full-capacity flow through the node's boundary fills its area, so
     # sd = rw_flow_frac x PEAK_SPECIFIC_FLOW x width / area (p/m^2 per second). E16 showed the fixed
-    # 0.01 lags a small, fast-filling zone by ~2 min (WATCH 105 s late on a 300 m^2 compartment)
-    rw_flow_frac: float = 0.0
+    # 0.01 lags a small, fast-filling zone by ~2 min (WATCH 105 s late on a 300 m^2 compartment).
+    # 0 = the legacy fixed rw_sd (E12-E13 as first run, kept as the "fixed-rw" configs)
+    rw_flow_frac: float = 1.0
 
     def as_dict(self):
         return asdict(self)
@@ -249,7 +250,6 @@ SWEEP = dict([
     _v("rf30", obs_every_s=30, obs_rel_sd=0.25, obs_bias_sd=0.10, obs_dropout=0.2),
     _v("rf60", obs_every_s=60, obs_rel_sd=0.25, obs_bias_sd=0.10, obs_dropout=0.2),
 ])
-# E16 fix: the realistic layouts with the physics-based random walk (rw_flow_frac = 1)
-FLOW = {f"{k}+flowrw": replace_cfg(CONFIGS[k], name=f"{k}+flowrw", rw_flow_frac=1.0)
-        for k in ("narrow-2%+cam10", "narrow-2%+rf10", "cam10-only")}
-ALL = {**CONFIGS, **SWEEP, **FLOW}
+# the realistic layout with the legacy fixed random walk, for comparison with the first E12 runs
+LEGACY = {"narrow-2%+cam10 fixed-rw": replace_cfg(CONFIGS["narrow-2%+cam10"], name="narrow-2%+cam10 fixed-rw", rw_flow_frac=0.0)}
+ALL = {**CONFIGS, **SWEEP, **LEGACY}

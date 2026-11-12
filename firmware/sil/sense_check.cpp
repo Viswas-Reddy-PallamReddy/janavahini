@@ -3,7 +3,7 @@
 // writes its estimate; the Python test runs sensing.kf_step on the same inputs and compares.
 //
 // Usage: sense_check <in.txt> <out.txt>
-// in.txt:  "T n", then n lines "area counted observed",
+// in.txt:  "T n", then n lines "area counted observed width" (width 0 = legacy fixed walk),
 //          then T*n lines "cin cout due z fault"   (fault: 0 none, 1 naive, 2 flag; applied
 //          before that second's step, as site_experiment.run does)
 // out.txt: T lines of n estimates
@@ -22,10 +22,10 @@ int main(int argc, char** argv) {
   SenseParams p;
   std::vector<DensityEstimator> est(n);
   for (int i = 0; i < n; i++) {
-    float area;
+    float area, width;
     int c, o;
-    if (fscanf(fi, "%f %d %d", &area, &c, &o) != 3) return 2;
-    est[i].init(area, c != 0, o != 0, p);
+    if (fscanf(fi, "%f %d %d %f", &area, &c, &o, &width) != 4) return 2;
+    est[i].init(area, c != 0, o != 0, p, width);
   }
   FILE* fo = fopen(argv[2], "w");
   if (!fo) return 2;

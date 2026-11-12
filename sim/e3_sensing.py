@@ -41,7 +41,8 @@ CONFIGS = {
     "narrow-2%+rf10": SensingConfig(name="narrow-2%+rf10", counters="narrow", density="all", count_bias_sd=0.02,
                                     obs_every_s=10, obs_rel_sd=0.25, obs_bias_sd=0.10, obs_dropout=0.2),
 }
-CONFIGS.update({f"{k}+flowrw": replace(CONFIGS[k], name=f"{k}+flowrw", rw_flow_frac=1.0)
+# the first E16 run used the legacy fixed random walk (0.01 p/m^2/s): kept for comparison
+CONFIGS.update({f"{k} fixed-rw": replace(CONFIGS[k], name=f"{k} fixed-rw", rw_flow_frac=0.0)
                 for k in ("narrow-2%+cam10", "narrow-2%+rf10")})
 NARROW = {"X"}     # the 2 m exit corridor; every other zone has a boundary at least 8 m wide
 

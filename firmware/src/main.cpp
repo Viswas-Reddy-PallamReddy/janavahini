@@ -117,6 +117,9 @@ static int bleDevicesSeen = 0;
 #ifndef PATCH_AREA_M2
 #define PATCH_AREA_M2 300.0f      // patch area (m^2), set per node at installation
 #endif
+#ifndef PATCH_WIDTH_M
+#define PATCH_WIDTH_M 8.0f        // boundary width (m): sets how fast an uncounted patch may fill
+#endif
 #ifndef HAS_COUNTERS
 #define HAS_COUNTERS 1            // every boundary of the patch has a line counter (gates, exits)
 #endif
@@ -509,7 +512,7 @@ void setup() {
   scan->setInterval(100);
   scan->setWindow(90);
   configureRoute();
-  est.init(PATCH_AREA_M2, HAS_COUNTERS != 0, HAS_READING != 0, senseP);
+  est.init(PATCH_AREA_M2, HAS_COUNTERS != 0, HAS_READING != 0, senseP, PATCH_WIDTH_M);
   Serial.printf("{\"type\":\"boot\",\"node\":%d}\n", NODE_ID);
 }
 
