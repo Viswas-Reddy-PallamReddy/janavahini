@@ -443,7 +443,7 @@ Every prediction is listed against the matching measurement in `e11_analytic_vs_
 | **Counters at gates/exits (2 %) + camera every 10 s, fused** | **20/20** | **3.57** | 5 | 20/20 | 0.039 |
 | Same, 5 % counter bias | 20/20 | 3.57 | 5 | 20/20 | 0.039 |
 | Same, RF attenuation instead of camera (σ_rel 25 %, σ_γ 10 %, 20 % lost) | 20/20 | **4.00** | 7 | 20/20 | 0.119 |
-| Cameras only, every 10 s | 20/20 | 3.57 | 6 | 20/20 | 0.051 |
+| Cameras only, every 10 s | 20/20 | 3.53 | 9 | 20/20 | 0.065 |
 | Counters at gates/exits only, wide areas unsensed | **4/20** | 5.07 | 20 | 20/20 | 0.083 |
 
 Blocked exit: route QS is safe in 20/20 with every set-up, but counters without a density reading make 90–96 % of holds needless.
@@ -465,7 +465,9 @@ Blocked exit: route QS is safe in 20/20 with every set-up, but counters without 
 
 **Requirement for the hardware:** a density reading at least every 120 s with ≤ 20 % error per reading. Losing readings matters far less than noisy ones. RF attenuation is a fallback only, and only at 10 s.
 
-**E12c: failures under the realistic layout** (deployed firmware: hold + 2-hop backup + escalation; 5 surge and 4–5 blocked draws; at the first alert):
+**E12 rerun note (12 Nov, physics-based random walk):** every row of the table above is unchanged except cameras-only (needless holds 6 → 9 draws, RMSE 0.051 → 0.065): with no counters anywhere, the filter now follows each 10 % camera reading more closely on compartments, so noise triggers a few more precautionary holds. The legacy fixed-walk run reproduces the old realistic-layout row exactly.
+
+**E12c: failures under the realistic layout** (deployed firmware: hold + 2-hop backup + escalation; 5 surge and 4–5 blocked draws; at the first alert; rerun 12 Nov with the physics-based walk: identical safe counts, random 10 % peak 4.3 → 4.2):
 - **Boards die** (as E10): compartment, gate, junction, road 5/5 each (road was 4/5 in E10); gate + junction 3/5 (the known gap, covered by the ICCC); 5 / 10 / 20 % at random 5/5, 4/5, 4/5. Blocked exit 4/4 in every case. Imperfect sensing does not weaken failure handling.
 - **A camera fails while its board runs on**, two firmware behaviours: *naive* (dead-reckon on counters where present, else blind = 0) and *flag* (report max(last estimate, WATCH level)). Safe in **every** case (compartment, gate, junction, road; 40 runs). Flagging holds more (road peak up to 3.95); recommended rule: keep counting where counters exist, report at least WATCH only where they do not.
 
@@ -482,6 +484,7 @@ Options in `qs_core.RouteParams` (all off by default; E1–E12 reproduce): **slo
 | Dead-node release | identical | identical | identical | ~20 |
 
 - **Slow release is unsafe.** In every failing draw the compartments stayed below 2.5 p/m²; the crush was upstream, where a red hold lasting ≥ 120 s piled held pilgrims above 4 p/m² (the "hold where there is buffer" lesson of §2.6, from the other side). Red → amber must stay fast so held crowds can be metered.
+- **Rerun 12 Nov** with the physics-based random walk: identical safe counts in every case of Parts A and B; worst peaks moved by at most 0.14 p/m².
 - **Amber-only slow release** keeps the lights calmer with no loss in normal operation, but costs one draw when the approach road's board dies. It is offered as a pilot-tunable option, not the default.
 - **Dynamic shares and dead-node release had no effect** here: the share-weighted sum already tracks diversion closely, and in a surge the nodes behind a dead board are never calm, so the release correctly never fires. After random failures, the needless holds (74–95 %) come from the WATCH floor of "unknown is not safe", which by design is never released to green without the board or an operator.
 - **Correction:** the stored E8 "route-qs fail-safe" row predated later failure-handling fixes. E8 was regenerated on 11 Nov with the current code: only that row changed (still 20/20 safe in both scenarios), every other row reproduced exactly.
@@ -574,7 +577,7 @@ All three roles compile:
 - simulated density `R`;
 - raw sensor counts for the estimator `N` (`CountMsg`).
 
-**Build** (`pio run`, 11 Nov, with the density estimator):
+**Build** (`pio run`, 12 Nov, with the density estimator and per-patch width):
 
 | Role | RAM | Flash |
 |---|---|---|

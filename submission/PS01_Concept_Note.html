@@ -306,7 +306,7 @@ a { color: var(--river); }
       <table>
         <thead><tr><th style="width: 15%">Layer</th><th>Technology</th><th style="width: 30%">Status</th></tr></thead>
         <tbody>
-          <tr><td>Sensing</td><td>Line counters (a pair of VL53L1X time-of-flight sensors) at gates and exits, where barricades already form lanes; on wide roads, density from existing CCTV or an edge camera wired to the node over LAN/serial, so a network cut does not blind it; a 2-state Kalman filter per node fuses them</td><td>Modelled with realistic errors and tested (E12); fusion to be ported to the firmware header</td></tr>
+          <tr><td>Sensing</td><td>Line counters (a pair of VL53L1X time-of-flight sensors per 1.2 m barricade lane: 4 lanes at a gate, 2–3 at an exit), where barricades already form lanes; on wide roads, density from existing CCTV or an edge camera wired to the node over LAN/serial, so a network cut does not blind it; a 2-state Kalman filter per node fuses them</td><td>Modelled with realistic errors and tested at site scale (E12) and in the JuPedSim compartment (E16); ported to the firmware, which matches the simulation within 0.001 persons/m²</td></tr>
           <tr><td>Node</td><td>ESP32 firmware (C++, PlatformIO); the alert logic is one header shared with the simulator, so the tested code is the deployed code</td><td>Complete; 244 virtual boards tested; not yet flashed</td></tr>
           <tr><td>Network</td><td>ESP-NOW 25-byte messages once a second (0.7% channel load with 10 boards in range); LoRa SF7 for long hops, sent on change</td><td>ESP-NOW done; LoRa stubbed until modules arrive</td></tr>
           <tr><td>Server</td><td>Python FastAPI; REST with OpenAPI documentation; WebSocket; playback, serial and hardware-in-the-loop modes</td><td>Done; end-to-end tests pass</td></tr>
@@ -324,7 +324,7 @@ a { color: var(--river); }
       <table>
         <thead><tr><th style="width: 18%">Item</th><th>Requirement</th></tr></thead>
         <tbody>
-          <tr><td>Hardware per node</td><td>ESP32 board with LoRa (SX1276); IP65 three-colour signal tower; IP65 enclosure; mains adapter with backup battery. <strong>Gate and exit nodes:</strong> two VL53L1X time-of-flight sensors, shaded from direct sun. <strong>Wide-road nodes:</strong> a density feed from an existing CCTV camera or an edge camera box, wired to the node.</td></tr>
+          <tr><td>Hardware per node</td><td>ESP32 board with LoRa (SX1276); IP65 three-colour signal tower; IP65 enclosure; mains adapter with backup battery. <strong>Gate and exit nodes:</strong> a pair of VL53L1X time-of-flight sensors per lane (8 at a gate, 4–6 at an exit), shaded from direct sun. <strong>Wide-road nodes:</strong> a density feed from an existing CCTV camera or an edge camera box, wired to the node.</td></tr>
           <tr><td>Quantity</td><td><strong>244 nodes</strong> for the full site (136 gate and exit counter nodes; 108 density nodes at compartments, junctions, roads and Nagaras) plus <strong>10 zone gateways</strong> bridging the mesh to the ICCC over 4G; <strong>11 nodes and a gateway</strong> for the pilot.</td></tr>
           <tr><td>Software</td><td>Open-source ESP32 firmware, FastAPI backend and web dashboard; runs on one server or VM at the ICCC.</td></tr>
           <tr><td>Infrastructure</td><td>Power and mounting points at gates, roads and junctions. Counters only where barricades already form lanes (gates, exits); <strong>no road is narrowed</strong> for counting.</td></tr>
@@ -404,7 +404,7 @@ a { color: var(--river); }
     <ul>
       <li><strong>Scales without retraining.</strong> Adding a ghat means adding nodes and edges to the route map. Tested on a route graph of 68 compartments, 20 junctions and 10 Nagaras (244 virtual boards, 30% radio loss); radio load is 0.7% with 10 boards in range.</li>
       <li><strong>No central bottleneck.</strong> Decisions are local, so cost grows linearly with the number of nodes.</li>
-      <li><strong>Sustainable.</strong> Hardware is low-cost (₹5,100–8,900 per gate or exit node), off-the-shelf and repairable locally; software is open-source with no licence fees.</li>
+      <li><strong>Sustainable.</strong> Hardware is low-cost (₹8,800–13,500 for a four-lane gate node), off-the-shelf and repairable locally; software is open-source with no licence fees.</li>
       <li><strong>Reused after Pushkaralu.</strong> The same nodes serve Maha Shivaratri, Dasara, temple queues, bus stands and railway stations, and the approach transfers to other mass gatherings such as Krishna Pushkaralu.</li>
     </ul>
     <div class="tw">
@@ -444,20 +444,21 @@ a { color: var(--river); }
     <div class="cols" style="break-inside: avoid">
       <div class="tw">
         <table>
-          <thead><tr><th>One gate or exit (counter) node</th><th class="num">₹ (retail)</th></tr></thead>
+          <thead><tr><th>One gate node (4 counting lanes)</th><th class="num">₹ (retail)</th></tr></thead>
           <tbody>
             <tr><td>ESP32 board with LoRa radio (SX1276) [11]</td><td class="num">1,650</td></tr>
-            <tr><td>Two time-of-flight counting sensors (VL53L1X) [12], shaded</td><td class="num">1,130 – 1,330</td></tr>
+            <tr><td>Eight time-of-flight counting sensors (VL53L1X, a pair per lane) [12], shaded</td><td class="num">4,530 – 5,320</td></tr>
+            <tr><td>I2C multiplexer and lane wiring (our estimate)</td><td class="num">300 – 600</td></tr>
             <tr><td>Three-colour IP65 signal tower with buzzer [13]</td><td class="num">630 – 3,135</td></tr>
             <tr><td>IP65 enclosure [14], pole clamp, sun hood</td><td class="num">410 – 800</td></tr>
             <tr><td>Power: 12 V 7 Ah battery (about 15 h backup), adapter, wiring</td><td class="num">1,300 – 2,000</td></tr>
-            <tr class="total"><td>Per counter node</td><td class="num">≈ 5,100 – 8,900</td></tr>
+            <tr class="total"><td>Per gate node</td><td class="num">≈ 8,800 – 13,500</td></tr>
           </tbody>
         </table>
       </div>
       <div class="stack">
-        <p><strong>Pilot</strong> (Kotilingala model compartment: 11 nodes and a gateway, with our own cameras): about <strong>₹3.4–5.2 lakh</strong> all-in, including GST, installation, operations and validation.</p>
-        <p><strong>Full site</strong> (244 nodes and 10 zone gateways, as in our site model): about <strong>₹25–43 lakh</strong> all-in if wide-area density comes from the CCTV the state is installing, or <strong>₹41–64 lakh</strong> with our own camera on each of the 108 wide-area nodes. That is under 0.02% of the ₹4,026 crore of Pushkaralu works [16].</p>
+        <p><strong>Pilot</strong> (Kotilingala model compartment: 11 nodes and a gateway, with our own cameras): about <strong>₹3.7–5.5 lakh</strong> all-in, including GST, installation, operations and validation.</p>
+        <p><strong>Full site</strong> (244 nodes and 10 zone gateways, as in our site model): about <strong>₹30–50 lakh</strong> all-in if wide-area density comes from the CCTV the state is installing, or <strong>₹46–72 lakh</strong> with our own camera on each of the 108 wide-area nodes. That is under 0.02% of the ₹4,026 crore of Pushkaralu works [16].</p>
         <p><strong>Software</strong> is open-source and runs on one server or VM at the ICCC.</p>
         <p class="small">Indicative only: unit prices are public retail listings (November 2026); the separate budget plan gives every line, its source and its assumption. Full-site spending follows a go / no-go review of the pilot. Nodes are reused after the event.</p>
       </div>
@@ -470,6 +471,7 @@ a { color: var(--river); }
       <li><strong>All results so far are from simulation.</strong> The compartment layout is assumed until we receive the Kotilingala model-compartment plans, and the sensor errors are modelled, not yet measured; the pilot measures them.</li>
       <li><strong>Wide roads depend on a density reading</strong> (CCTV or edge camera): at least every 2 minutes with ≤ 20% error. A camera-free radio fallback (signal attenuation across the road) was safe only when it reported every 10 s, with no margin.</li>
       <li>A command centre with a working network is slightly better on a surge (peak 2.9 vs 3.3 persons/m²); that is why we propose the hybrid.</li>
+      <li><strong>The police must act quickly.</strong> In our field simulation, if everyone obeys the lights, even a 3-minute police delay stayed safe in 20 of 20 surge draws. If only 70% obey, acting within 60 s stayed safe in 20 of 20, but 2–3 minute delays kept only 14 and 9 of 20 safe. Drills train acting within a minute.</li>
       <li>Two neighbouring boards failing together (gate and junction) can leave a gap in 2 of 5 tests; the ICCC covers that case when the network is up.</li>
       <li>In about 1 in 4 near-miss scenarios, where the crowd rose fast but stopped short of danger, the system slowed the flow as a precaution.</li>
       <li>Line counters work only in lanes, so they are placed only where barricades already form them (gates, exits); the VL53L1X needs shade, since direct sun cuts its range to under 1 m. Nodes need a power, weather, theft and maintenance plan, which is part of the pilot design.</li>

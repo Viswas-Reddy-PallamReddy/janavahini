@@ -136,7 +136,7 @@ td.sub { color: var(--muted); font-size: 12px; }
   <header class="titleblock">
     <div class="eyebrow">Indicative budget and implementation plan · Problem Statement 1: Real-Time Crowd Monitoring and Congestion Management</div>
     <h1>Janavahini: what it costs and how we get it to the ghats by June 2027</h1>
-    <p class="lede">A pilot at one model compartment costs about <strong>₹3.4–5.2 lakh</strong> all-in. The full site costs <strong>₹25–43 lakh</strong> all-in if it reuses the CCTV the state is already installing, or <strong>₹41–64 lakh</strong> with our own cameras. That is under 0.02% of the ₹4,026 crore of Pushkaralu works. Every figure below comes from a public Indian price listing (November 2026) or a stated assumption.</p>
+    <p class="lede">A pilot at one model compartment costs about <strong>₹3.7–5.5 lakh</strong> all-in. The full site costs <strong>₹30–50 lakh</strong> all-in if it reuses the CCTV the state is already installing, or <strong>₹46–72 lakh</strong> with our own cameras. That is under 0.02% of the ₹4,026 crore of Pushkaralu works. Every figure below comes from a public Indian price listing (November 2026) or a stated assumption.</p>
     <div class="meta">
       <span><b>Team</b> IIIT Hyderabad: Divya Teja Yekkaluru, Pallamreddy Viswas Reddy</span>
       <span><b>Challenge</b> RTIH × RMC Innovation-Led Solutions for Godavari Pushkaralu 2027</span>
@@ -146,10 +146,10 @@ td.sub { color: var(--muted); font-size: 12px; }
 
   <section>
     <div class="figs">
-      <div class="fig"><span class="n">₹5.1–8.9k</span><span class="t">one gate or exit node, with counters and signal light</span></div>
-      <div class="fig"><span class="n">₹3.4–5.2 L</span><span class="t">pilot all-in: 11 nodes, a gateway, operations and validation</span></div>
-      <div class="fig"><span class="n">₹25–43 L</span><span class="t">full site all-in: 244 nodes, 10 gateways, reusing state CCTV</span></div>
-      <div class="fig"><span class="n">2.5–5.3 p</span><span class="t">paise per expected pilgrim, Tier A (8–10 crore pilgrims) [11]</span></div>
+      <div class="fig"><span class="n">₹8.8–13.5k</span><span class="t">one gate node: counters on 4 barricade lanes and a signal light</span></div>
+      <div class="fig"><span class="n">₹3.7–5.5 L</span><span class="t">pilot all-in: 11 nodes, a gateway, operations and validation</span></div>
+      <div class="fig"><span class="n">₹30–50 L</span><span class="t">full site all-in: 244 nodes, 10 gateways, reusing state CCTV</span></div>
+      <div class="fig"><span class="n">3.0–6.3 p</span><span class="t">paise per expected pilgrim, Tier A (8–10 crore pilgrims) [11]</span></div>
     </div>
   </section>
 
@@ -160,8 +160,8 @@ td.sub { color: var(--muted); font-size: 12px; }
       <table>
         <thead><tr><th>Place</th><th class="num">Width</th><th class="num">Count</th><th>Sensing</th><th>Node type</th></tr></thead>
         <tbody>
-          <tr><td>Compartment gate</td><td class="num">5 m</td><td class="num">68</td><td>Line counters in barricade lanes</td><td rowspan="2">Counter node · <strong>136</strong></td></tr>
-          <tr><td>Compartment exit</td><td class="num">3 m</td><td class="num">68</td><td>Line counters</td></tr>
+          <tr><td>Compartment gate</td><td class="num">5 m</td><td class="num">68</td><td>Line counters on 4 barricade lanes (1.2 m each)</td><td rowspan="2">Counter node · <strong>136</strong></td></tr>
+          <tr><td>Compartment exit</td><td class="num">3 m</td><td class="num">68</td><td>Line counters on 2–3 lanes</td></tr>
           <tr><td>Ghat compartment</td><td class="num">20 m</td><td class="num">68</td><td>Density reading (camera)</td><td rowspan="4">Density node · <strong>108</strong></td></tr>
           <tr><td>Junction</td><td class="num">25 m</td><td class="num">20</td><td>Density reading</td></tr>
           <tr><td>Approach road</td><td class="num">30 m</td><td class="num">10</td><td>Density reading</td></tr>
@@ -177,20 +177,21 @@ td.sub { color: var(--muted); font-size: 12px; }
     <div class="eyebrow">2 · Bill of materials per unit</div>
     <div class="tw">
       <table>
-        <thead><tr><th>Component</th><th class="num">Counter node ₹</th><th class="num">Density node ₹</th><th>Price basis</th></tr></thead>
+        <thead><tr><th>Component</th><th class="num">Gate node ₹</th><th class="num">Exit node ₹</th><th class="num">Density node ₹</th><th>Price basis</th></tr></thead>
         <tbody>
-          <tr><td>ESP32 board with LoRa radio (SX1276); runs the alert, the Kalman filter and the mesh</td><td class="num">1,650</td><td class="num">1,650</td><td>Hubtronics listing [1]</td></tr>
-          <tr><td>Two VL53L1X time-of-flight sensors (direction-aware counting), shaded</td><td class="num">1,130 – 1,330</td><td class="num">–</td><td>₹566–665 each, FlyRobo quantity pricing [2]</td></tr>
-          <tr><td>Three-colour signal tower with buzzer, 24 V, IP65</td><td class="num">630 – 3,135</td><td class="num">630 – 3,135</td><td>Generic IndiaMART ₹630; Schneider XVGB3SH ₹3,135 [3]</td></tr>
-          <tr><td>IP65 enclosure, pole clamp, sun hood for the sensors</td><td class="num">410 – 800</td><td class="num">410 – 800</td><td>Enclosure ₹110–300 [4]; clamp and hood our estimate</td></tr>
-          <tr><td>Power: 12 V 7 Ah sealed battery (about 15 h backup), adapter, wiring</td><td class="num">1,300 – 2,000</td><td class="num">1,300 – 2,000</td><td>Exide 12 V 7 Ah ₹900–1,300 [5]; rest our estimate</td></tr>
-          <tr class="total"><td>Per node</td><td class="num">≈ 5,100 – 8,900</td><td class="num">≈ 4,000 – 7,600</td><td></td></tr>
-          <tr><td><strong>Own edge camera</strong> (density nodes, Tier B only): Raspberry Pi 5 (2 GB) + Camera Module 3 Wide + outdoor housing, power supply, SD card. A reading every 60–120 s meets our requirement, so the Pi's CPU is enough and no AI accelerator is needed.</td><td class="num">–</td><td class="num">+ 10,400 – 14,100</td><td>Pi 5 2 GB ₹5,145–7,287 [6]; camera ₹3,210 + GST [7]; housing and power our estimate</td></tr>
-          <tr><td><strong>Zone gateway:</strong> ESP32 LoRa board (our gateway firmware) + 4G router + enclosure and power</td><td colspan="2" class="num">5,800 – 7,800 each</td><td>TP-Link MR100 ₹2,690–3,699 [8]; 4G data about ₹400/month (our estimate)</td></tr>
+          <tr><td>ESP32 board with LoRa radio (SX1276); runs the alert, the Kalman filter and the mesh</td><td class="num">1,650</td><td class="num">1,650</td><td class="num">1,650</td><td>Hubtronics listing [1]</td></tr>
+          <tr><td>VL53L1X time-of-flight sensors, a direction-aware pair per 1.2 m lane, shaded: 8 at a gate (4 lanes), 4–6 at an exit</td><td class="num">4,530 – 5,320</td><td class="num">2,260 – 3,990</td><td class="num">–</td><td>₹566–665 each, FlyRobo quantity pricing [2]</td></tr>
+          <tr><td>I2C multiplexer (the sensors share one address) and lane wiring</td><td class="num">300 – 600</td><td class="num">300 – 600</td><td class="num">–</td><td>Our estimate</td></tr>
+          <tr><td>Three-colour signal tower with buzzer, 24 V, IP65</td><td class="num">630 – 3,135</td><td class="num">630 – 3,135</td><td class="num">630 – 3,135</td><td>Generic IndiaMART ₹630; Schneider XVGB3SH ₹3,135 [3]</td></tr>
+          <tr><td>IP65 enclosure, pole clamp, sun hood for the sensors</td><td class="num">410 – 800</td><td class="num">410 – 800</td><td class="num">410 – 800</td><td>Enclosure ₹110–300 [4]; clamp and hood our estimate</td></tr>
+          <tr><td>Power: 12 V 7 Ah sealed battery (about 15 h backup), adapter, wiring</td><td class="num">1,300 – 2,000</td><td class="num">1,300 – 2,000</td><td class="num">1,300 – 2,000</td><td>Exide 12 V 7 Ah ₹900–1,300 [5]; rest our estimate</td></tr>
+          <tr class="total"><td>Per node</td><td class="num">≈ 8,800 – 13,500</td><td class="num">≈ 6,600 – 12,200</td><td class="num">≈ 4,000 – 7,600</td><td></td></tr>
+          <tr><td><strong>Own edge camera</strong> (density nodes, Tier B only): Raspberry Pi 5 (2 GB) + Camera Module 3 Wide + outdoor housing, power supply, SD card. A reading every 60–120 s meets our requirement, so the Pi's CPU is enough and no AI accelerator is needed.</td><td class="num">–</td><td class="num">–</td><td class="num">+ 10,400 – 14,100</td><td>Pi 5 2 GB ₹5,145–7,287 [6]; camera ₹3,210 + GST [7]; housing and power our estimate</td></tr>
+          <tr><td><strong>Zone gateway:</strong> ESP32 LoRa board (our gateway firmware) + 4G router + enclosure and power</td><td colspan="3" class="num">5,800 – 7,800 each</td><td>TP-Link MR100 ₹2,690–3,699 [8]; 4G data about ₹400/month (our estimate)</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="small">The signal tower sets most of the range: a generic road-side unit at the low end, a branded industrial unit at the high end. The pilot will tell us which survives sun and rain. For comparison, one commercial dual-lens people-counting camera costs about US$764 [9]; our whole counter node costs ₹5,100–8,900.</p>
+    <p class="small">The signal tower sets most of the range: a generic road-side unit at the low end, a branded industrial unit at the high end. The pilot will tell us which survives sun and rain. For comparison, one commercial dual-lens people-counting camera costs about US$764 [9]; our gate node, covering four lanes, costs ₹8,800–13,500.</p>
   </section>
 
   <section>
@@ -198,17 +199,17 @@ td.sub { color: var(--muted); font-size: 12px; }
     <div class="tiers">
       <div class="tier">
         <span class="h">Pilot · Kotilingala model compartment</span>
-        <span class="n">₹3.4 – 5.2 lakh</span>
+        <span class="n">₹3.7 – 5.5 lakh</span>
         <p>6 counter nodes (3 gates, 3 exits), 5 density nodes (road, junction, 3 compartments) with <strong>our own cameras</strong>, 1 gateway. Own cameras let us measure camera accuracy against manual counts and the state's CCTV.</p>
       </div>
       <div class="tier rec">
         <span class="h">Tier A · reuse state CCTV <span class="tag">Recommended</span></span>
-        <span class="n">₹25 – 43 lakh</span>
+        <span class="n">₹30 – 50 lakh</span>
         <p>The state is already installing CCTV at entry and exit points [11]. Density is computed from that CCTV and sent to the nodes. If the network fails, a wide-area node reports at least WATCH, which was safe in all 40 simulated camera-failure runs but means more holds.</p>
       </div>
       <div class="tier">
         <span class="h">Tier B · our own camera on every wide area</span>
-        <span class="n">₹41 – 64 lakh</span>
+        <span class="n">₹46 – 72 lakh</span>
         <p>A camera is wired to each of the 108 density nodes, so wide-area density survives a network failure. Tier A plus own cameras only where CCTV does not reach falls between the two; the pilot data decides where.</p>
       </div>
     </div>
@@ -220,17 +221,18 @@ td.sub { color: var(--muted); font-size: 12px; }
       <table>
         <thead><tr><th>Line item</th><th class="num">Pilot</th><th class="num">Full site<br>Tier A</th><th class="num">Full site<br>Tier B</th><th>Basis</th></tr></thead>
         <tbody>
-          <tr><td>Node and gateway hardware</td><td class="num">1.08 – 1.70</td><td class="num">11.9 – 21.1</td><td class="num">23.0 – 36.3</td><td class="sub">Counts (§1) × unit costs (§2)</td></tr>
-          <tr><td>Spares</td><td class="num">0.11 – 0.17</td><td class="num">1.2 – 2.1</td><td class="num">2.3 – 3.6</td><td class="sub">10% of hardware</td></tr>
-          <tr><td>GST</td><td class="num">0.21 – 0.34</td><td class="num">2.4 – 4.2</td><td class="num">4.6 – 7.2</td><td class="sub">18% on hardware and spares; an upper bound, since some listed prices already include it</td></tr>
+          <tr><td>Node and gateway hardware</td><td class="num">1.24 – 1.93</td><td class="num">15.4 – 26.4</td><td class="num">26.5 – 41.6</td><td class="sub">Counts (§1) × unit costs (§2)</td></tr>
+          <tr><td>Spares</td><td class="num">0.12 – 0.19</td><td class="num">1.5 – 2.6</td><td class="num">2.7 – 4.2</td><td class="sub">10% of hardware</td></tr>
+          <tr><td>GST</td><td class="num">0.24 – 0.38</td><td class="num">3.0 – 5.2</td><td class="num">5.3 – 8.2</td><td class="sub">18% on hardware and spares; an upper bound, since some listed prices already include it</td></tr>
           <tr><td>Installation</td><td class="num">0.07 – 0.12</td><td class="num">1.4 – 2.5</td><td class="num">1.4 – 2.5</td><td class="sub">Two-person crew, 8 units a day, ₹1,000–1,500 per person-day (statutory floor for skilled work ≈ ₹520/day [10]); ₹300–600 of wiring per unit</td></tr>
           <tr><td>4G data for gateways</td><td class="num">0.04</td><td class="num">0.36</td><td class="num">0.36</td><td class="sub">₹400 a month × 9 months</td></tr>
           <tr><td>Field operations</td><td class="num">1.12 – 1.58</td><td class="num">5.2 – 7.6</td><td class="num">5.2 – 7.6</td><td class="sub">Pilot: 4 technicians × 3 days; our team of 4 × 10 days. Event: 20 technician shifts a day × 16 days (setup and the 12 days); our team of 4 on call at the ICCC for 20 days at ₹2,500–3,500 per person-day for travel and stay</td></tr>
           <tr><td>Validation, drills and training</td><td class="num">0.50 – 0.80</td><td class="num">0.5 – 1.0</td><td class="num">0.5 – 1.0</td><td class="sub">Pilot: manual-count validation and a bench test kit. Event: Telugu/English protocol cards and two drills with police and volunteers</td></tr>
-          <tr><td>Contingency</td><td class="num">0.31 – 0.47</td><td class="num">2.3 – 3.9</td><td class="num">3.7 – 5.9</td><td class="sub">10%</td></tr>
-          <tr class="total"><td>Total</td><td class="num">≈ 3.4 – 5.2</td><td class="num">≈ 25 – 43</td><td class="num">≈ 41 – 64</td><td></td></tr>
+          <tr><td>Contingency</td><td class="num">0.33 – 0.50</td><td class="num">2.7 – 4.6</td><td class="num">4.2 – 6.6</td><td class="sub">10%</td></tr>
+          <tr class="total"><td>Total</td><td class="num">≈ 3.7 – 5.5</td><td class="num">≈ 30 – 50</td><td class="num">≈ 46 – 72</td><td></td></tr>
           <tr><td>Software licences</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="sub">Open-source firmware, backend and dashboard</td></tr>
           <tr><td>Server</td><td colspan="3" class="num">ICCC-provided</td><td class="sub">One server or VM in the RMC or state data centre</td></tr>
+          <tr><td>Density from CCTV (Tier A)</td><td colspan="3" class="num">ICCC analytics, or ≈ 1.5 – 2.5 extra</td><td class="sub">If the ICCC's video analytics cannot give a density per area, one GPU workstation runs an open crowd-counting model on the CCTV feeds (our estimate; not in the totals)</td></tr>
         </tbody>
       </table>
     </div>
@@ -257,12 +259,13 @@ td.sub { color: var(--muted); font-size: 12px; }
 
   <section>
     <div class="eyebrow">6 · Go / no-go before full-site spending</div>
-    <p>Most of the money is spent only after the pilot passes these checks. Each threshold comes from what the simulations needed.</p>
+    <p>Most of the money is spent only after the pilot passes these six checks. Each threshold comes from what the simulations needed.</p>
     <ol class="gates">
       <li><strong>Counters:</strong> within ±5% of manual counts at the pilot gates and exits. The Kalman filter was tested with 2–5% counter bias.</li>
       <li><strong>Camera density:</strong> a reading at least every 2 minutes with 20% error or less, measured against manual counts. This is the requirement from our sensitivity runs.</li>
       <li><strong>Radio:</strong> at least 70% of mesh messages delivered. The simulations assumed 30% loss.</li>
       <li><strong>Uptime:</strong> every silent node reported to staff; node uptime at least 99% over the pilot days.</li>
+      <li><strong>Response time:</strong> in drills, the police at a road head act within 60 s of their light changing. In our field simulation (E14), with 70% of the crowd complying, up to 60 s of delay stayed safe in 20 of 20 surge draws; 2–3 minute delays kept only 14 and 9 of 20 safe.</li>
       <li><strong>Police review:</strong> warning lead time and the number of false alerts per day accepted by the police in charge of the pilot.</li>
     </ol>
     <p class="small">If a check fails, we fix the cause and re-test before buying for the full site; the pilot hardware is not wasted, because it becomes part of the full site.</p>
@@ -276,7 +279,7 @@ td.sub { color: var(--muted); font-size: 12px; }
         <tbody>
           <tr><td>Nov 2026</td><td>Firmware built for all three board types and bench-tested; live demo of network-down and dead-node behaviour</td><td>Mesh delivery rate, decision match with simulator</td></tr>
           <tr><td>Nov 2026 – Jan 2027</td><td>Route map for the Kotilingala model compartment; 11 nodes and a gateway installed; CCTV and ICCC connected</td><td>Counting accuracy vs manual counts</td></tr>
-          <tr><td>Feb – Mar 2027</td><td><strong>Live pilot at Maha Shivaratri</strong>; go / no-go report</td><td>The five checks in §6</td></tr>
+          <tr><td>Feb – Mar 2027</td><td><strong>Live pilot at Maha Shivaratri</strong>; go / no-go report</td><td>The six checks in §6</td></tr>
           <tr><td>Mar – Jun 2027</td><td>GeM procurement; 244 nodes and 10 gateways installed; Telugu/English staff messages; drills on the three-colour protocol</td><td>Drill response times, install acceptance tests</td></tr>
           <tr><td>26 Jun – 7 Jul 2027</td><td>12-day operation from the ICCC, with our team on call</td><td>Live KPIs, incident log</td></tr>
           <tr><td>After the event</td><td>Handover to RMC; nodes reused for Maha Shivaratri, Dasara, temple queues, bus stands and railway stations</td><td>Post-event report</td></tr>
@@ -311,6 +314,7 @@ td.sub { color: var(--muted); font-size: 12px; }
           <tr><td>Power, weather and theft</td><td>IP65 enclosures, a battery giving about 15 h of backup, mounting on existing barricades and poles; 10% spares on site</td></tr>
           <tr><td>Counting on wide roads; counter drift</td><td>Counters only where barricades form lanes; camera density on wide areas; a Kalman filter on each node removes counter drift (simulated: 100 of 100 surge draws safe)</td></tr>
           <tr><td>CCTV density unavailable or too poor (Tier A)</td><td>Our own cameras at those areas (Tier B unit cost: ₹10,400–14,100 each); the node reports at least WATCH while blind</td></tr>
+          <tr><td>Police act late, or crowds ignore the lights</td><td>Simulated (E14): with full compliance safe even at 3 minutes' delay; with 70% compliance safe in 20 of 20 surge draws up to 60 s, 9 of 20 at 3 minutes; drills train acting within a minute, and the light stands at the road head where the police are</td></tr>
           <tr><td>Price changes before procurement</td><td>10% contingency; GeM rates; the signal tower and camera have alternative suppliers</td></tr>
         </tbody>
       </table>

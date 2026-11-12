@@ -3,7 +3,7 @@ site-surge,board dies: compartment,deployed,5,5,0.0,0,3.57,0.0,190483
 site-surge,board dies: gate,deployed,5,5,0.0,0,3.57,0.0,192199
 site-surge,board dies: gate+junction,deployed,5,3,620.6,1734,4.85,0.3,193261
 site-surge,board dies: junction,deployed,5,5,0.0,0,3.57,0.0,191825
-site-surge,board dies: random 10%,deployed,5,4,143.4,717,4.3,74.3,190500
+site-surge,board dies: random 10%,deployed,5,4,107.6,538,4.2,74.3,190418
 site-surge,board dies: random 20%,deployed,5,4,16.4,82,4.26,82.5,184687
 site-surge,board dies: random 5%,deployed,5,5,0.0,0,3.57,60.5,188686
 site-surge,board dies: road,deployed,5,5,0.0,0,3.97,0.0,191389

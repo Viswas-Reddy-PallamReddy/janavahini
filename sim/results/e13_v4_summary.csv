@@ -1,11 +1,11 @@
 part,scenario,sensing,case,option,draws,draws_safe,s_above_4_max,peak_max,held_node_s_mean,needless_pct_mean,exited_mean,light_changes_per_h_mean,light_changes_per_h_max
-A,site-surge,narrow-2%+cam10,no failure,deployed,20,20,0,3.57,7577,25.0,197595,20.6,73.0
-A,site-surge,narrow-2%+cam10,no failure,+slow-release,20,14,100,4.85,6712,25.0,196874,10.4,33.0
-A,site-surge,narrow-2%+cam10,no failure,+dyn-share,20,20,0,3.57,7584,25.0,197613,20.7,78.0
-A,site-surge,narrow-2%+cam10,no failure,+dead-release,20,20,0,3.57,7577,25.0,197595,20.6,73.0
-A,site-surge,narrow-2%+cam10,no failure,v4,20,14,100,4.85,6514,25.0,196871,10.3,33.0
-A,site-surge,narrow-2%+cam10,no failure,+slow-amber,20,20,0,3.57,8051,25.0,197278,13.2,47.0
-A,site-surge,narrow-2%+cam10,no failure,v4b,20,20,0,3.57,8109,25.0,197268,13.5,63.0
+A,site-surge,narrow-2%+cam10,no failure,deployed,20,20,0,3.57,7578,25.0,197593,20.6,73.0
+A,site-surge,narrow-2%+cam10,no failure,+slow-release,20,14,100,4.85,6686,25.0,196792,11.0,33.0
+A,site-surge,narrow-2%+cam10,no failure,+dyn-share,20,20,0,3.57,7583,25.0,197616,20.6,78.0
+A,site-surge,narrow-2%+cam10,no failure,+dead-release,20,20,0,3.57,7578,25.0,197593,20.6,73.0
+A,site-surge,narrow-2%+cam10,no failure,v4,20,14,100,4.85,6505,25.0,196779,10.8,33.0
+A,site-surge,narrow-2%+cam10,no failure,+slow-amber,20,20,0,3.57,8047,25.0,197278,13.2,47.0
+A,site-surge,narrow-2%+cam10,no failure,v4b,20,20,0,3.57,8105,25.0,197268,13.5,63.0
 A,site-surge,truth,no failure,deployed,20,20,0,3.57,7668,20.0,197678,19.9,86.0
 A,site-surge,truth,no failure,+slow-release,20,14,130,4.67,6964,20.0,197098,9.8,41.0
 A,site-surge,truth,no failure,+dyn-share,20,20,0,3.57,7660,20.0,197699,19.8,86.0
@@ -29,36 +29,36 @@ A,site-blocked,truth,no failure,+slow-amber,20,20,0,2.42,828,30.0,156456,15.2,37
 A,site-blocked,truth,no failure,v4b,20,20,0,2.42,828,30.0,156456,15.2,37.0
 B,site-surge,narrow-2%+cam10,board dies: compartment,deployed,5,5,0,3.57,9964,0.0,190483,18.7,59.0
 B,site-surge,narrow-2%+cam10,board dies: compartment,+dead-release,5,5,0,3.57,9964,0.0,190483,18.7,59.0
-B,site-surge,narrow-2%+cam10,board dies: compartment,v4,5,4,78,4.72,9290,0.0,189701,11.2,28.0
+B,site-surge,narrow-2%+cam10,board dies: compartment,v4,5,4,78,4.72,9284,0.0,189637,11.6,28.0
 B,site-surge,narrow-2%+cam10,board dies: compartment,v4b,5,5,0,3.57,10620,0.0,190013,14.6,59.0
-B,site-surge,narrow-2%+cam10,board dies: gate,deployed,5,5,0,3.57,9097,0.0,192199,25.3,42.0
-B,site-surge,narrow-2%+cam10,board dies: gate,+dead-release,5,5,0,3.57,9097,0.0,192199,25.3,42.0
-B,site-surge,narrow-2%+cam10,board dies: gate,v4,5,2,55,4.32,7951,0.0,190985,14.0,44.0
-B,site-surge,narrow-2%+cam10,board dies: gate,v4b,5,5,0,3.57,9266,0.0,191392,16.0,32.0
+B,site-surge,narrow-2%+cam10,board dies: gate,deployed,5,5,0,3.57,9095,0.0,192199,25.3,42.0
+B,site-surge,narrow-2%+cam10,board dies: gate,+dead-release,5,5,0,3.57,9095,0.0,192199,25.3,42.0
+B,site-surge,narrow-2%+cam10,board dies: gate,v4,5,2,70,4.32,7941,0.0,191124,14.5,44.0
+B,site-surge,narrow-2%+cam10,board dies: gate,v4b,5,5,0,3.57,9263,0.0,191392,16.0,32.0
 B,site-surge,narrow-2%+cam10,board dies: gate+junction,deployed,5,3,1734,4.85,5928,0.3,193261,16.9,39.0
 B,site-surge,narrow-2%+cam10,board dies: gate+junction,+dead-release,5,3,1734,4.85,5928,0.3,193261,16.9,39.0
 B,site-surge,narrow-2%+cam10,board dies: gate+junction,v4,5,0,1734,4.96,6518,0.6,192045,10.5,23.0
 B,site-surge,narrow-2%+cam10,board dies: gate+junction,v4b,5,3,1734,4.85,7040,0.6,192771,11.8,27.0
 B,site-surge,narrow-2%+cam10,board dies: junction,deployed,5,5,0,3.57,7255,0.0,191825,23.5,62.0
 B,site-surge,narrow-2%+cam10,board dies: junction,+dead-release,5,5,0,3.57,7255,0.0,191825,23.5,62.0
-B,site-surge,narrow-2%+cam10,board dies: junction,v4,5,2,340,4.92,6916,0.0,190399,12.6,23.0
+B,site-surge,narrow-2%+cam10,board dies: junction,v4,5,2,340,4.92,7048,0.0,190386,12.6,23.0
 B,site-surge,narrow-2%+cam10,board dies: junction,v4b,5,5,0,3.57,8130,0.0,191286,15.3,32.0
-B,site-surge,narrow-2%+cam10,board dies: random 10%,deployed,5,4,717,4.3,38029,74.3,190500,21.0,94.0
-B,site-surge,narrow-2%+cam10,board dies: random 10%,+dead-release,5,4,717,4.3,38029,74.3,190500,21.0,94.0
-B,site-surge,narrow-2%+cam10,board dies: random 10%,v4,5,2,1710,5.0,37183,75.8,188480,14.7,94.0
-B,site-surge,narrow-2%+cam10,board dies: random 10%,v4b,5,4,820,4.31,38823,72.7,190203,20.2,94.0
+B,site-surge,narrow-2%+cam10,board dies: random 10%,deployed,5,4,538,4.2,38029,74.3,190418,21.1,94.0
+B,site-surge,narrow-2%+cam10,board dies: random 10%,+dead-release,5,4,538,4.2,38029,74.3,190418,21.1,94.0
+B,site-surge,narrow-2%+cam10,board dies: random 10%,v4,5,2,1673,5.0,37042,76.1,188248,14.7,94.0
+B,site-surge,narrow-2%+cam10,board dies: random 10%,v4b,5,4,794,4.26,38823,72.7,190029,20.4,94.0
 B,site-surge,narrow-2%+cam10,board dies: random 20%,deployed,5,4,82,4.26,61712,82.5,184687,22.3,94.0
 B,site-surge,narrow-2%+cam10,board dies: random 20%,+dead-release,5,4,82,4.26,61712,82.5,184687,22.3,94.0
-B,site-surge,narrow-2%+cam10,board dies: random 20%,v4,5,2,1856,5.03,59501,83.2,181075,16.5,96.0
+B,site-surge,narrow-2%+cam10,board dies: random 20%,v4,5,2,1924,5.03,59499,83.2,181083,16.4,94.0
 B,site-surge,narrow-2%+cam10,board dies: random 20%,v4b,5,4,665,4.85,60730,81.6,185200,22.3,94.0
 B,site-surge,narrow-2%+cam10,board dies: random 5%,deployed,5,5,0,3.57,26841,60.5,188686,15.9,73.0
 B,site-surge,narrow-2%+cam10,board dies: random 5%,+dead-release,5,5,0,3.57,26841,60.5,188686,15.9,73.0
-B,site-surge,narrow-2%+cam10,board dies: random 5%,v4,5,4,1,4.0,26105,62.0,187560,9.5,73.0
+B,site-surge,narrow-2%+cam10,board dies: random 5%,v4,5,4,1,4.0,26114,62.0,187563,9.5,73.0
 B,site-surge,narrow-2%+cam10,board dies: random 5%,v4b,5,5,0,3.57,27972,58.0,188136,14.2,73.0
 B,site-surge,narrow-2%+cam10,board dies: road,deployed,5,5,0,3.97,10634,0.0,191389,29.9,77.0
 B,site-surge,narrow-2%+cam10,board dies: road,+dead-release,5,5,0,3.97,10634,0.0,191389,29.9,77.0
-B,site-surge,narrow-2%+cam10,board dies: road,v4,5,3,790,4.66,9052,0.0,190868,11.7,28.0
-B,site-surge,narrow-2%+cam10,board dies: road,v4b,5,4,594,4.24,11376,0.0,191183,24.1,77.0
+B,site-surge,narrow-2%+cam10,board dies: road,v4,5,3,520,4.52,8980,0.0,190513,11.8,28.0
+B,site-surge,narrow-2%+cam10,board dies: road,v4b,5,4,467,4.22,11376,0.0,191170,24.3,77.0
 B,site-blocked,narrow-2%+cam10,board dies: compartment,deployed,4,4,0,2.7,869,50.0,153048,1.2,3.0
 B,site-blocked,narrow-2%+cam10,board dies: compartment,+dead-release,4,4,0,2.7,869,50.0,153048,1.2,3.0
 B,site-blocked,narrow-2%+cam10,board dies: compartment,v4,4,4,0,2.7,869,50.0,153048,1.2,3.0
