@@ -23,6 +23,9 @@
 | Mathematical model checked against the simulations | ✅ E11 (§2.10) |
 | PS-01 realistic sensing (biased counters, noisy camera readings, Kalman fusion) | ✅ E12 (§2.11): counters alone fail 15 of 20 surges; the fused layout is safe in **100 of 100** surge and 100 of 100 blocked-exit draws; sensor requirement derived; camera and board failures tested |
 | PS-01 firmware v4 options (light timing, dynamic shares, dead-node release) | ✅ E13 (§2.12): a 120 s dwell on every light drop is **unsafe** (held crowds upstream pass 4 p/m²); amber-only slowing is safe and cuts light changes ~35%; the other two are neutral |
+| Field response: police delay, partial compliance | ✅ E14 (§2.13): full compliance safe even at 3 min delay; 70 % compliance needs action within 60 s (120–180 s: 14 and 9 of 20 safe) |
+| Alert-threshold sensitivity | ✅ E15 (§2.14): every setting safe in 20/20; θ_watch trades holds against peak |
+| Realistic sensing in the JuPedSim compartment | ✅ E16 (§2.15): found an estimator lag (0/5 safe); fixed with a physics-based random walk (5/5), now the default in Python and firmware |
 | ESP32 firmware (3 roles) | ✅ compiles. Runs the **route-graph QS** with node-failure handling. ✅ Firmware code tested in software-in-the-loop (SIL) against the Python model: 100% identical (§4.1).  The final change (held + bypassed = the larger level) was re-checked on 31 Oct under WSL2 `g++`: still 100% identical. ⚠ Not yet flashed or tested on boards |
 | Backend (REST API for the command centre) + dashboard | ✅ end-to-end tests pass (`backend/test_app.py`) |
 | Concept notes, pitch decks, demo videos | ✅ concept note, architecture and budget updated 11–12 Nov (E12–E16; budget costed node by node with sourced prices); demo video re-cut with voiceover 12 Nov |
@@ -426,6 +429,7 @@ Every prediction is listed against the matching measurement in `e11_analytic_vs_
 - **Line counters** on a boundary: counted = true crossings × (1 + β) + N(0, 0.3·√crossings); β is a fixed per-counter bias, β ~ N(0, 2 % or 5 %). A counter on edge i → j is "out" for i and "in" for j. Placement: *all* boundaries (the idealised layout), or *narrow* ones only (≤ 6 m: junction → gate, gate → compartment, compartment → exit, exit outflow), since wide roads cannot be line-counted without lanes.
 - **Density reading** (edge camera wired to the node, existing CCTV, or RF link attenuation): every T s (staggered per node), z = ρ·(1 + γᵢ)·(1 + ε) + N(0, 0.05); γᵢ ~ N(μ, σ_γ) fixed per node, ε ~ N(0, σ_rel); missing with probability p_drop.
 - **Estimator:** a 2-state Kalman filter per node, x = [ρ, b], b the drift of the counted net flux. Predict ρ ← ρ + (in − out)/A − b; correct with z when a reading arrives (this removes accumulated drift and learns b). Nodes without full counter coverage run a random walk corrected by z; nodes with neither sensor are blind and report 0. Scalar operations only, so it ports to the firmware header.
+- **Random-walk step (changed 12 Nov after E16, §2.15):** density at an uncounted node may change by at most 1.22 × width / area per second (a full-capacity flow through its boundary). The first E12 runs used a fixed 0.01 p/m²/s, which lags small, fast-filling zones by about 2 minutes. All E12–E15 results in this report were rerun with the physics-based step; at site scale the numbers barely moved (peaks within 0.12 p/m², identical safe/unsafe counts in E12b and E12d).
 - **Checks:** with "truth" sensing E12 reproduces E8 exactly (route QS and hybrid, both scenarios). Unit tests (`test_sensing.py`): dead reckoning drifts exactly as β·q·T/A predicts (1.8 p/m² after 1 h at 5 % on 6 p/s into 600 m²); the filter keeps the error ≤ 0.35 p/m², beats the camera alone, and learns b on average.
 
 **E12: sensing set-ups, 20 draws × 2 scenarios** (route QS = the mesh alone, 30 % link loss; hybrid = ICCC + mesh). Surge:
@@ -444,7 +448,7 @@ Every prediction is listed against the matching measurement in `e11_analytic_vs_
 
 Blocked exit: route QS is safe in 20/20 with every set-up, but counters without a density reading make 90–96 % of holds needless.
 
-**E12d: 100 draws** (route QS): perfect sensing 100/100 surge (worst 3.57) and 100/100 blocked (2.44); the realistic layout (counters at gates/exits + camera every 10 s) **100/100 surge (worst 3.57) and 100/100 blocked (2.86)**. 100/100 gives a two-sided 95 % Clopper–Pearson lower bound of 96.4 % (20/20: 83.2 %).
+**E12d: 100 draws** (route QS): perfect sensing 100/100 surge (worst 3.57) and 100/100 blocked (2.44); the realistic layout (counters at gates/exits + camera every 10 s) **100/100 surge (worst 3.57) and 100/100 blocked (2.86)**. 100/100 gives a two-sided 95 % Clopper–Pearson lower bound of 96.4 % (20/20: 83.2 %). Rerun 12 Nov with the physics-based random walk: identical safe counts and worst peaks; needless holds in 27/100 surge and 51/100 blocked draws.
 
 **E12b: how good the density reading must be** (realistic layout, surge, route QS, 20 draws; one property changed at a time):
 
@@ -454,10 +458,10 @@ Blocked exit: route QS is safe in 20/20 with every set-up, but counters without 
 | every 300 s | 20/20 | 3.71 |
 | 20 % / 50 % of readings lost | 20/20 | 3.57 |
 | per-camera bias σ_γ 10 % / 20 % | 20/20 | 3.57 |
-| all cameras undercount 10 % / 20 % | 20/20 | 3.70 / 3.90 |
-| noise σ_rel 20 % | 20/20 | 3.69 |
-| **noise σ_rel 30 %** | **18/20** (up to 624 s above 4) | **4.45** |
-| **RF at 30 s / 60 s** (σ_rel 25 %, σ_γ 10 %, 20 % lost) | **19/20** | 4.16 / 4.11 |
+| all cameras undercount 10 % / 20 % | 20/20 | 3.71 / 3.96 |
+| noise σ_rel 20 % | 20/20 | 3.57 |
+| **noise σ_rel 30 %** | **18/20** (up to 624 s above 4) | **4.42** |
+| **RF at 30 s / 60 s** (σ_rel 25 %, σ_γ 10 %, 20 % lost) | **19/20** | 4.11 / 4.11 |
 
 **Requirement for the hardware:** a density reading at least every 120 s with ≤ 20 % error per reading. Losing readings matters far less than noisy ones. RF attenuation is a fallback only, and only at 10 s.
 
@@ -481,6 +485,64 @@ Options in `qs_core.RouteParams` (all off by default; E1–E12 reproduce): **slo
 - **Amber-only slow release** keeps the lights calmer with no loss in normal operation, but costs one draw when the approach road's board dies. It is offered as a pilot-tunable option, not the default.
 - **Dynamic shares and dead-node release had no effect** here: the share-weighted sum already tracks diversion closely, and in a surge the nodes behind a dead board are never calm, so the release correctly never fires. After random failures, the needless holds (74–95 %) come from the WATCH floor of "unknown is not safe", which by design is never released to green without the board or an operator.
 - **Correction:** the stored E8 "route-qs fail-safe" row predated later failure-handling fixes. E8 was regenerated on 11 Nov with the current code: only that row changed (still 20/20 safe in both scenarios), every other row reproduced exactly.
+
+### 2.13 Police reaction delay and partial compliance (E14, `sim/field_experiment.py`)
+
+**Why.** Every earlier experiment assumed the crowd obeys a light the second it changes. E14 delays the response by D seconds and lets only a fraction c of it take effect: holds and meters reach c of their effect, and diversion moves c of the planned share change. Realistic sensing (counters at gates/exits + camera every 10 s), deployed firmware (hold + 2-hop backup + escalation), route QS alone with 30 % link loss, 20 draws per cell.
+
+Surge, draws safe of 20 (worst peak in brackets); the blocked exit was safe in 20/20 in every cell (worst 3.58):
+
+| Delay D | c = 100 % | c = 70 % | c = 50 % |
+|---|---|---|---|
+| 0 s | 20 (3.57) | 20 (3.70) | 18 (4.04) |
+| 30 s | 20 (3.55) | 20 (3.99) | 20 (3.98) |
+| 60 s | 20 (3.58) | 20 (4.00) | 19 (4.03) |
+| 120 s | 20 (3.81) | **14** (4.05) | 18 (4.06) |
+| 180 s | 20 (3.96) | **9** (4.05) | 18 (4.13) |
+
+- **Full compliance tolerates even a 3-minute delay.** The danger is late action *and* partial compliance together: with 70 % compliance, 60 s is safe in 20/20 but 120 s and 180 s keep only 14 and 9 of 20 safe (up to 375 s above 4 p/m²).
+- **Not monotone in compliance:** 50 % compliance does better than 70 % at long delays (18/20). Our reading, untested: weaker holds build smaller held crowds upstream, which then release less violently; at 50 % the crowd is also never fully stopped where it is dense.
+- **Field rule:** drills train the road-head police to act within a minute of their light changing, and the pilot measures the actual delay and compliance.
+
+### 2.14 Alert-threshold sensitivity (E15, `sim/field_experiment.py`)
+
+One parameter changed at a time around the defaults, 20 draws per setting, same set-up as E14 (no delay, full compliance):
+
+| Setting | Surge safe | Surge worst peak | Draws with needless holds (surge / blocked) | Held node-s (surge) |
+|---|---|---|---|---|
+| default (θ_watch 0.6, θ_crit 0.85, δ 0.85, horizon 60 s, floor 1.5) | 20/20 | 3.57 | 5 / 7 | 7,578 |
+| θ_watch 0.5 / 0.7 | 20/20 / 20/20 | 3.56 / 3.97 | 6 / 8 · 4 / 0 | 10,274 / 6,659 |
+| θ_crit 0.75 / 0.95 | 20/20 | 3.57 | 5 / 7 | ~7,530 |
+| δ 0.75 / 0.92 | 20/20 | 3.57 | 5 / 7 | 7,768 / 7,372 |
+| rate horizon 30 / 90 s | 20/20 | 3.57 | 5 / 7 | 7,233 / 7,967 |
+| rate floor 1.0 / 2.0 | 20/20 | 3.57 | 5 / 7 | ~7,600 |
+
+- **Robust:** every setting kept every draw safe in both scenarios (blocked worst 2.84–2.88).
+- **θ_watch is the one real dial:** 0.5 holds 36 % more node-seconds; 0.7 removes every needless hold in the blocked exit but lets the surge peak reach 3.97, close to the limit. The default 0.6 sits between them; the pilot data should set it.
+- The other parameters barely matter at these settings.
+
+### 2.15 Realistic sensing in the JuPedSim compartment (E16, `sim/e3_sensing.py`)
+
+**Why.** E12 tested sensing only on the macroscopic site model. E16 runs the closed-loop JuPedSim compartment of E3 (variant 5: route QS, 30 % link loss, no backhaul; surge and blocked exit, seeds 1–5) through the same sensing layer and the same estimator (`sensing.kf_step`). In/out crossings per zone come from agent zone membership each second (`ghat_scenario.run`).
+
+**Set-ups.** Perfect sensing; line counters on every zone (5 % bias, no density reading: dead reckoning); the realistic layout (only the 2 m exit corridor X is narrow enough to line-count, so a camera reads every zone every 10 s, 10 % noise, 5 % per-camera bias); the same with RF attenuation (25 % noise, 10 % bias, 20 % of readings lost).
+
+**Check.** Perfect sensing reproduces plain E3 rerun on the same machine exactly (seeds 1 and 4: peak 3.4133 and 3.4367). The stored E3 numbers (run on the Windows build) differ slightly per seed (all safe in both): JuPedSim runs are not bit-identical across platforms.
+
+| Sensing | Random walk | Surge: safe seeds | Surge: worst peak | Surge: mean s above 4 | Blocked: seeds never above 4 | Estimate RMSE (surge) |
+|---|---|---|---|---|---|---|
+| Perfect | – | 5/5 | 3.44 | 0 | 3/5 (max 2 s above 4) | 0 |
+| Counters on every zone, 5 % | – | 5/5 | 3.87 | 0 | **0/5 (up to 441 s)** | 0.45 |
+| Realistic layout, camera 10 s | fixed 0.01 | **0/5** | **4.77** | **820** | 3/5 (max 1 s) | 0.23 |
+| **Realistic layout, camera 10 s** | **physics** | **5/5** | **3.37** | **0** | 3/5 (max 1 s) | **0.08** |
+| RF instead of camera | fixed 0.01 | 0/5 | 6.08 | 828 | 3/5 | 0.99 |
+| RF instead of camera | physics | 2/5 | 4.44 | 284 | 3/5 | 0.26 |
+
+- **The estimator was the problem, not the alert method.** With the fixed random walk (0.01 p/m²/s) the filter trusted each 10 % camera reading too little and trailed a fast-filling zone by about 2 minutes. Replaying the recorded E3 surge offline, WATCH was recognised 105 s late on compartment C2. Site-scale zones are 600–20,000 m² and fill slowly, so E12 never showed it; the 64 m² gate and 300 m² compartments here fill 3–10 times faster.
+- **Fix:** the random-walk step follows the physics, 1.22 × boundary width / area per second (the fastest a full-capacity flow can change the density). Offline replay: WATCH 5 s late. Closed loop: safe in 5/5, estimate RMSE 0.23 → 0.08. It is now the default in `sensing.py` and in the firmware (`PATCH_WIDTH_M`); the old step is kept as the "fixed-rw" set-ups.
+- **Dead reckoning at compartment scale:** counters alone stay safe in the surge but miss the blocked exit in every seed (up to 441 s above 4): drift accumulates while the zone fills slowly. Counters need a density reading.
+- **RF attenuation** is not enough here even with the fix (2/5): it stays a fallback only.
+- **Still small:** 5 seeds per scenario at compartment scale.
 
 ---
 

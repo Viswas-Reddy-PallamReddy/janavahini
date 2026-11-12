@@ -1,5 +1,5 @@
 scenario,sensing,method,runs,runs_safe_everywhere,runs_with_needless_holds,any_s_above_4_mean,any_s_above_4_max,peak_any_mean,peak_any_max,held_node_s_mean,needless_pct_mean,exited_mean,est_rmse_comp_mean,est_max_abs_err_dense_max,blind_nodes,counted_nodes
 site-surge,truth,route-qs,100,100,21,0.0,0,3.17,3.57,8300.0,21.0,197802.0,0.0,0.0,0,244
-site-surge,narrow-2%+cam10,route-qs,100,100,27,0.0,0,3.29,3.57,8038.0,26.0,197890.0,0.04,0.69,0,204
+site-surge,narrow-2%+cam10,route-qs,100,100,27,0.0,0,3.29,3.57,8039.0,26.0,197884.0,0.04,0.69,0,204
 site-blocked,truth,route-qs,100,100,51,0.0,0,2.37,2.44,725.0,51.0,155651.0,0.0,0.0,0,244
 site-blocked,narrow-2%+cam10,route-qs,100,100,51,0.0,0,2.48,2.86,695.0,51.0,155611.0,0.03,0.49,0,204
