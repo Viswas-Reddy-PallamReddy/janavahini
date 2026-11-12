@@ -140,10 +140,11 @@ a { color: var(--river); }
         <defs><marker id="aA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink2)"/></marker></defs>
         <g font-size="10.5" fill="var(--ink2)">
           <rect x="2" y="20" width="140" height="112" rx="8" fill="var(--wash)" stroke="var(--rule)"/>
-          <text x="72" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">1 · Counting</text>
-          <text x="72" y="64" text-anchor="middle">2 × VL53L1X ToF sensors</text>
-          <text x="72" y="80" text-anchor="middle">per patch boundary,</text>
-          <text x="72" y="96" text-anchor="middle">or CCTV/AI counts</text>
+          <text x="72" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">1 · Sensing</text>
+          <text x="72" y="64" text-anchor="middle">ToF counters at gates,</text>
+          <text x="72" y="80" text-anchor="middle">CCTV / edge-camera</text>
+          <text x="72" y="96" text-anchor="middle">density on roads,</text>
+          <text x="72" y="112" text-anchor="middle">Kalman fusion</text>
           <rect x="157" y="20" width="140" height="112" rx="8" fill="var(--wash)" stroke="var(--ours)" stroke-width="1.5"/>
           <text x="227" y="42" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">2 · Node (ESP32)</text>
           <text x="227" y="64" text-anchor="middle">density, 60-s forecast</text>
@@ -187,7 +188,7 @@ a { color: var(--river); }
       <table>
         <thead><tr><th style="width: 15%">Layer</th><th>Technology</th><th style="width: 28%">Prototype status</th></tr></thead>
         <tbody>
-          <tr><td>1 · Counting</td><td>Two VL53L1X time-of-flight sensors per patch boundary give direction-aware in/out counts; or density from existing CCTV/AI feeds through the API</td><td>Simulated; sensors are an add-on</td></tr>
+          <tr><td>1 · Sensing</td><td>A pair of VL53L1X time-of-flight sensors per 1.2 m lane gives direction-aware in/out counts at gates (4 lanes) and exits (2–3 lanes), where barricades already form lanes (shaded: direct sun cuts their range to under 1 m). On wide roads, density from existing CCTV or an edge camera wired to the node. A 2-state Kalman filter per node, [density, counter drift], fuses them so counter errors cannot pile up; on a patch without counters, its allowed rate of change is set by physics (peak walking flow × boundary width ÷ area), so it follows a fast-filling patch within seconds.</td><td>Modelled with realistic errors and tested at site scale (E12) and in the JuPedSim compartment (E16); ported to the firmware (matches within 0.001 persons/m²)</td></tr>
           <tr><td>2 · Node</td><td>ESP32 firmware (C++, PlatformIO) computes density, a 60-s forecast and the route-weighted alert, and drives an IP65 three-colour signal. The alert logic is one header shared with the simulator.</td><td>Complete; 22% RAM; 244 virtual boards tested; not yet flashed</td></tr>
           <tr><td>3 · Mesh</td><td>ESP-NOW 25-byte messages once a second for short hops (0.7% channel load with 10 boards in range); LoRa for long hops, sent on change. Silent nodes are detected and reported.</td><td>ESP-NOW done; LoRa stubbed until modules arrive</td></tr>
           <tr><td>4 · Server</td><td>Python FastAPI: REST with OpenAPI documentation, WebSocket live feed; web dashboard with zone map, alert log, inflow commands and node-down reports</td><td>Done; end-to-end tests pass</td></tr>
@@ -200,8 +201,8 @@ a { color: var(--river); }
     <div class="eyebrow">2 · Workflow inside every node · repeated once a second</div>
     <h2>Count, look ahead, combine warnings, signal, pass back</h2>
     <div class="flow">
-      <div class="fbox"><b>1 · Count</b>Sensors at both ends of the ~25 m patch count people crossing in and out.</div>
-      <div class="fbox"><b>2 · Density</b>People in patch = in − out; density = people ÷ patch area.</div>
+      <div class="fbox"><b>1 · Measure</b>Line counters at gates and exits count people in and out; on wide roads a camera density reading arrives every 10–120 s.</div>
+      <div class="fbox"><b>2 · Fuse</b>Kalman filter: predict density from (in − out) ÷ area, correct with each density reading; it also learns the counter drift.</div>
       <div class="fbox"><b>3 · Look ahead</b>Forecast = density now + rate of rise × 60 s (rate used only once the patch is busy, ≥ 1.5 persons/m²).</div>
       <div class="fbox"><b>4 · Listen</b>Receive the states of downstream nodes over the mesh; weight each by the share of this road's flow that heads there (from the route map).</div>
       <div class="fbox a"><b>5 · Combine</b>Take the strongest of: own forecast, weighted downstream warnings, and the ICCC command (if the network is up).</div>
@@ -258,11 +259,11 @@ a { color: var(--river); }
       <table>
         <thead><tr><th style="width: 18%">Item</th><th>Requirement</th></tr></thead>
         <tbody>
-          <tr><td>Hardware per node</td><td>ESP32 board with LoRa (SX1276); two VL53L1X ToF sensors (not needed where CCTV counts exist); IP65 three-colour signal tower; IP65 enclosure; mains adapter with backup battery.</td></tr>
-          <tr><td>Quantity</td><td>About 250 nodes for the full site (68 compartments, 20 junctions, 10 Nagaras); 10–15 for the pilot. Gateway node(s) connect to the server over USB/serial.</td></tr>
+          <tr><td>Hardware per node</td><td>ESP32 board with LoRa (SX1276); IP65 three-colour signal tower; IP65 enclosure; mains adapter with backup battery. Gate and exit nodes: a pair of VL53L1X ToF sensors per lane (8 at a gate, 4–6 at an exit), shaded. Wide-road nodes: a density feed from existing CCTV or an edge camera box, wired to the node.</td></tr>
+          <tr><td>Quantity</td><td>244 nodes for the full site (136 gate and exit counter nodes; 108 density nodes at compartments, junctions, roads and Nagaras) plus 10 zone gateways bridging the mesh to the ICCC over 4G; 11 nodes and a gateway for the pilot.</td></tr>
           <tr><td>Software</td><td>Open-source ESP32 firmware, FastAPI backend and web dashboard; runs on one server or VM at the ICCC.</td></tr>
-          <tr><td>Infrastructure</td><td>Power and mounting points at gates, roads and junctions; barricades narrowing gates to single or double file for accurate counting.</td></tr>
-          <tr><td>Integration</td><td>(a) Read crowd counts from existing CCTV/AI analytics. (b) Push node states, alerts and node-down events to ICCC dashboards and RTGS via a documented REST/WebSocket API. (c) Accept ICCC inflow commands. (d) Staff messages in Telugu and English.</td></tr>
+          <tr><td>Infrastructure</td><td>Power and mounting points at gates, roads and junctions. Counters only where barricades already form lanes; no road is narrowed for counting.</td></tr>
+          <tr><td>Integration</td><td>(a) Read crowd counts from existing CCTV/AI analytics, at the node where possible so a network cut does not blind it. (b) Push node states, alerts and node-down events to ICCC dashboards and RTGS via a documented REST/WebSocket API. (c) Accept ICCC inflow commands. (d) Staff messages in Telugu and English.</td></tr>
         </tbody>
       </table>
     </div>
@@ -271,7 +272,8 @@ a { color: var(--river); }
   <section>
     <div class="eyebrow">5 · Data and security</div>
     <ul>
-      <li><strong>Data:</strong> only counts and densities per patch, node health and alert logs. No images leave the sensor; no faces, phones or personal data.</li>
+      <li><strong>Data:</strong> only counts and densities per patch, node health and alert logs. Cameras count on the device: no images leave it, no video is stored, no faces, phones or personal data.</li>
+      <li><strong>Sensor requirement (simulation, E12):</strong> a density reading at least every 2 minutes with at most 20% error per reading. The design stayed safe with half the readings lost, with a 20% camera undercount, and when any single camera or board failed.</li>
       <li><strong>Security:</strong> authenticated node messages so a spoofed radio cannot raise or clear alerts; TLS on all API traffic; API keys and role-based access for ICCC operators; an audit log of every command; holds released only by an operator; hosting in the RMC or state data centre following CERT-In guidelines.</li>
     </ul>
   </section>

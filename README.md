@@ -18,7 +18,7 @@ Decisions are made on the ESP32 nodes, so alerts keep working when the mobile ne
 ## Status
 - **All results are from simulation:** the JuPedSim crowd simulator (RiMEA-verified, calibrated) and a whole-site flow model. See [`docs/TECHNICAL_REPORT.md`](docs/TECHNICAL_REPORT.md).
 - **Firmware** compiles and was tested as 244 virtual boards (software-in-the-loop). It has **not yet been flashed or field-tested**.
-- **Sensing is idealised:** the simulations give each node the true zone density. Counting noise and drift are listed as open work.
+- **Sensing:** E1–E11 give each node the true density. E12 (site scale) and E16 (JuPedSim compartment) add realistic sensing (biased line counters at gates and exits, noisy camera density readings on wide areas, a 2-state Kalman filter per node, ported to the firmware); the sensor errors are modelled, not yet measured. E14 adds late and partial police response, E15 threshold sensitivity.
 
 ## Headline results (simulation)
 | Test | Today's practice | Janavahini |
@@ -26,12 +26,16 @@ Decisions are made on the ESP32 nodes, so alerts keep working when the mobile ne
 | Ghat surge, JuPedSim, 5 seeds: runs kept below 4 persons/m² | 0 of 5 (peak 6.0) | 5 of 5 (peak 3.3), 30% radio loss, no network |
 | Warning reaches the road police | never | 172 s before the danger point |
 | Whole site (68 compartments, 20 junctions, 10 Nagaras), 20 surge draws | 6 of 20 safe | 20 of 20 safe |
+| Realistic sensing, whole site, 100 surge + 100 blocked-exit draws (E12d) | counters alone (in − out): 5 of 20 surges safe | 100 of 100 safe in both (95% lower bound ≈ 96%) |
+| Sensor requirement (E12b) | – | a density reading every ≤ 2 min with ≤ 20% error |
+| Realistic sensing in the JuPedSim compartment, 5 surge seeds (E16) | counters alone: safe in the surge, 0 of 5 in the blocked exit | 5 of 5 safe (peak 3.37) |
+| Police act late / crowd partly complies, 20 surge draws per cell (E14) | – | full compliance: safe even at 3 min delay; 70% compliance: safe if acting within 60 s |
 | Firmware vs Python model, 244 virtual boards | – | 100% identical decisions |
 
 ## Repository layout
 | Path | Contents |
 |---|---|
-| `sim/` | Simulations: JuPedSim compartment model, RiMEA tests, calibration, route-graph alert algorithm (`qs_core.py`), experiments E1–E11 |
+| `sim/` | Simulations: JuPedSim compartment model, RiMEA tests, calibration, route-graph alert algorithm (`qs_core.py`), sensing layer (`sensing.py`), experiments E1–E16 |
 | `sim/results/` | Summary results (CSV/JSON/PNG). Per-run traces are not committed; re-run the experiments to regenerate them. |
 | `firmware/` | PlatformIO ESP32 firmware; `include/pk_qs.h` is the alert logic shared with the SIL test (`firmware/sil/`) |
 | `backend/` | FastAPI service: REST API (OpenAPI at `/docs`), WebSocket feed, playback / serial / hardware-in-the-loop modes |

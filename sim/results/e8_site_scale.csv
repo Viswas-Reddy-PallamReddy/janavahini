@@ -1,21 +1,27 @@
-scenario,method,peak_compartment_density,comp_s_above_4,comp_s_above_5,peak_any_density,any_s_above_4,held_node_s,needless_hold_node_s,needless_pct,exited
-site-surge,none,4.85,1603,0,4.85,1603,0,0,0.0,201957
-site-surge,threshold,4.74,431,0,5.18,1700,5703,0,0.0,199071
-site-surge,qs-gradient,2.54,0,0,5.03,1842,22573,10169,45.0,168652
-site-surge,centralised,2.29,0,0,2.29,0,9240,0,0.0,197897
-site-surge,centralised-cut,4.85,1603,0,4.85,1603,0,0,0.0,201957
-site-surge,route-qs,2.37,0,0,3.39,0,9389,0,0.0,200549
-site-surge,route-qs no-share,2.32,0,0,3.04,0,6994,0,0.0,198290
-site-surge,route-qs with-horizon,2.37,0,0,4.2,585,12917,5656,43.8,203809
-site-surge,route-qs no-meter,2.27,0,0,2.88,0,4137,0,0.0,200291
-site-surge,route-qs no-divert,2.37,0,0,3.39,0,9575,0,0.0,199690
-site-blocked,none,4.48,311,0,4.48,311,0,0,0.0,154137
-site-blocked,threshold,4.48,311,0,4.48,311,0,0,0.0,154137
-site-blocked,qs-gradient,3.96,0,0,3.96,0,5276,1900,36.0,153364
-site-blocked,centralised,3.37,0,0,3.37,0,5640,0,0.0,151929
-site-blocked,centralised-cut,4.48,311,0,4.48,311,0,0,0.0,154137
-site-blocked,route-qs,2.42,0,0,2.42,0,1358,0,0.0,155083
-site-blocked,route-qs no-share,2.41,0,0,2.41,0,3888,0,0.0,153238
-site-blocked,route-qs with-horizon,2.42,0,0,2.42,0,1358,0,0.0,155083
-site-blocked,route-qs no-meter,2.44,0,0,2.44,0,1350,0,0.0,155076
-site-blocked,route-qs no-divert,4.07,60,0,4.26,66,1383,0,0.0,154137
+scenario,method,seed,peak_compartment_density,comp_s_above_4,comp_s_above_5,peak_any_density,any_s_above_4,held_node_s,needless_hold_node_s,needless_pct,exited,light_changes_per_h_mean,light_changes_per_h_max
+site-surge,none,0,4.85,1603,0,4.85,1603,0,0,0.0,201957,0.0,0.0
+site-surge,threshold,0,4.74,431,0,5.18,1700,5703,0,0.0,199071,2.0,2.0
+site-surge,qs-gradient,0,2.51,0,0,3.29,0,14310,2217,15.5,192607,3.4,11.0
+site-surge,centralised,0,2.29,0,0,2.29,0,9240,0,0.0,197897,20.0,20.0
+site-surge,centralised-cut,0,4.85,1603,0,4.85,1603,0,0,0.0,201957,0.0,0.0
+site-surge,route-qs,0,2.4,0,0,3.42,0,9289,0,0.0,200593,63.3,113.0
+site-surge,route-qs no-share,0,2.37,0,0,3.03,0,8054,0,0.0,198220,28.2,48.0
+site-surge,route-qs with-horizon,0,2.4,0,0,4.22,641,12666,5515,43.5,203788,38.1,130.0
+site-surge,route-qs no-meter,0,2.3,0,0,2.9,0,3988,0,0.0,200447,41.8,73.0
+site-surge,route-qs no-divert,0,2.4,0,0,3.42,0,9560,0,0.0,199714,66.2,118.0
+site-surge,route-qs fail-safe,0,2.4,0,0,3.4,0,9946,0,0.0,198909,37.2,67.0
+site-surge,hybrid,0,2.29,0,0,2.29,0,9240,0,0.0,197897,20.0,20.0
+site-surge,hybrid-cut,0,2.4,0,0,3.42,0,9289,0,0.0,200593,63.3,113.0
+site-blocked,none,0,4.48,311,0,4.48,311,0,0,0.0,154137,0.0,0.0
+site-blocked,threshold,0,4.48,311,0,4.48,311,0,0,0.0,154137,0.0,0.0
+site-blocked,qs-gradient,0,3.97,0,0,3.97,0,5163,1894,36.7,153400,2.3,9.0
+site-blocked,centralised,0,3.37,0,0,3.37,0,5640,0,0.0,151929,2.0,2.0
+site-blocked,centralised-cut,0,4.48,311,0,4.48,311,0,0,0.0,154137,0.0,0.0
+site-blocked,route-qs,0,2.43,0,0,2.43,0,1354,0,0.0,155080,40.0,47.0
+site-blocked,route-qs no-share,0,2.41,0,0,2.41,0,4023,0,0.0,153290,43.0,57.0
+site-blocked,route-qs with-horizon,0,2.43,0,0,2.43,0,1354,0,0.0,155080,40.0,47.0
+site-blocked,route-qs no-meter,0,2.45,0,0,2.45,0,1372,0,0.0,155074,38.0,43.0
+site-blocked,route-qs no-divert,0,4.04,33,0,4.59,142,1391,0,0.0,154137,35.0,35.0
+site-blocked,route-qs fail-safe,0,2.42,0,0,2.42,0,1402,0,0.0,155084,9.0,17.0
+site-blocked,hybrid,0,2.41,0,0,2.41,0,4610,0,0.0,152726,1.0,1.0
+site-blocked,hybrid-cut,0,2.43,0,0,2.43,0,1354,0,0.0,155080,40.0,47.0

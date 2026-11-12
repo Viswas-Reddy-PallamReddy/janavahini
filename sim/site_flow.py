@@ -86,6 +86,11 @@ class SiteFlow:
         if sc.surge_start <= t < sc.surge_end:
             rate[sc.surge_nagara] = sc.surge_rate
         self.N[self.sources] += rate
+        # true crossings this second, for the sensing layer (sensing.py): arrivals at Nagara
+        # entries and outflow through the exits; edge flows are the return value
+        self.last_arrivals = np.zeros(len(self.N))
+        self.last_arrivals[self.sources] = rate
+        self.last_exit_out = np.zeros(len(self.N))
 
         cap = self.cap.copy()
         if sc.blocked_comp is not None and t >= sc.blocked_at:
@@ -103,6 +108,7 @@ class SiteFlow:
         # exits empty into the town at their capacity
         out = np.minimum(self.N[self.exits], cap[self.exits])
         self.N[self.exits] -= out
+        self.last_exit_out[self.exits] = out
         self.exited += out.sum()
         np.maximum(self.N, 0.0, out=self.N)
         return flow

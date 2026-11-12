@@ -47,6 +47,7 @@ import numpy as np
 from qs_core import (ACT_HOLD, ACT_METER, ACT_NONE, CRITICAL, WATCH, CentralisedBaseline, QSNetwork, QSParams,
                      RouteParams, RouteQSNetwork, ThresholdBaseline)
 from route_graph import synthetic_site
+from sensing import Sensing, SensingConfig
 from site_flow import CONTROL, SCENARIOS, SiteFlow, branch_density_index, divert_shares
 
 RES = Path(__file__).resolve().parent / "results"
@@ -98,7 +99,14 @@ def hotspots(scenario, seed=0):
 def run(task):
     """task: (scenario, method, seed, hotspots[, extra]); extra may hold
     kills: [(node, t_s), ...] boards that die at t_s (no radio, no signal to their marshals),
-    rp: RouteParams overrides (e.g. FAILSAFE), label: free text copied to the output."""
+    rp: RouteParams overrides (e.g. FAILSAFE), label: free text copied to the output,
+    sensing: a SensingConfig as a dict (E12); without it the nodes see the true density,
+    sensor_kills: [(node, t_s, mode), ...] density sensors that fail at t_s while the board
+    runs on (mode "naive" or "flag", see sensing.Sensing.sensor_fault),
+    field: {"delay_s": D, "comply": c, "divert_comply": cd} (E14): police act D s after the
+    signal; holds/meters reach only a fraction c of their intended effect (control =
+    1 - c * (1 - planned control)); diversion moves only cd of the planned share change,
+    qs: QSParams overrides (E15 threshold sensitivity)."""
     scenario, method, seed, hot = task[:4]
     extra = task[4] if len(task) > 4 else {}
     g = synthetic_site()
@@ -106,7 +114,15 @@ def run(task):
     flow = SiteFlow(g, sc)
     n = g.n
     rng = np.random.default_rng(seed)
-    p = QSParams()
+    p = QSParams(**extra.get("qs", {}))
+    field = extra.get("field")
+    if field:
+        from collections import deque
+        f_delay = int(field.get("delay_s", 0))
+        f_comply = float(field.get("comply", 1.0))
+        f_div = float(field.get("divert_comply", f_comply))
+        hist_a = deque(maxlen=f_delay + 1)
+        hist_s = deque(maxlen=f_delay + 1)
     controlled = np.array([k in CONTROLLED_KINDS for k in g.kind])
     feeds = np.zeros((n, n), bool)                    # feeds[i, j]: i sends pilgrims towards j
     for j in range(n):
@@ -123,6 +139,11 @@ def run(task):
     for node, t_s in extra.get("kills", []):
         kill_t[node] = t_s
     last_branch_rho = np.zeros(len(eu))
+    sens = Sensing(g, SensingConfig(**extra["sensing"]), seed) if "sensing" in extra else None
+    est = np.zeros(n)                                  # sensed density; the site starts empty
+    err_sq_comp = 0.0
+    err_max = 0.0
+    err_max_dense = 0.0                                # largest error where the true density >= 2
 
     divert = True
     m_cc = None
@@ -155,10 +176,15 @@ def run(task):
     comp_above4 = comp_above5 = any_above4 = 0
     needless = held = 0
     peak_comp = peak_any = 0.0
+    light_changes = np.zeros(n, int)
+    prev_light = np.zeros(n, int)
+    lit = np.zeros(n, bool)
     for t in range(sc.duration_s):
+        diverting = np.zeros(n, bool)
         rho = flow.rho
+        meas = est if sens is not None else rho        # what the boards measure (E12) or the truth
         dead = kill_t <= t
-        seen = np.where(dead, 0.0, rho)                # a dead board reports nothing
+        seen = np.where(dead, 0.0, meas)               # a dead board reports nothing
         share = None
         if method == "none":
             action = np.zeros(n, int)
@@ -190,21 +216,50 @@ def run(task):
                 # what a junction knows about the room behind each branch: a gate relays its
                 # compartment's density. Old firmware: a dead compartment board reads as empty (0),
                 # a dead gate keeps its last value. Failure handling: unknown (no room).
-                branch_rho = np.where(dead[bidx], 0.0, rho[bidx])
+                branch_rho = np.where(dead[bidx], 0.0, meas[bidx])
                 branch_rho = np.where(dead[ev], last_branch_rho, branch_rho)
                 if failure_handling:
                     branch_rho = np.where(dead[bidx] | dead[ev], np.inf, branch_rho)
                 last_branch_rho = np.where(dead[ev], last_branch_rho, branch_rho)
                 share = divert_shares(g, base_share, m.edge_threat,
                                       np.where(m.edge_room_known, branch_rho, np.inf))
+                m.set_shares(share)                           # used only with dyn_share_tau_s > 0
                 diverted = np.zeros(n, bool)
                 diverted[np.unique(g.edge_arrays()[0][share != base_share])] = True
                 action[is_junction & diverted] = ACT_NONE     # diverting instead of holding
+                diverting = is_junction & diverted
         action = np.where(controlled & ~dead, action, ACT_NONE)     # a dead board's marshals get no signal
-        control = CTRL[action]
-        flow.step(t, control, share)
+        # the light the marshals see: red HOLD, amber METER or DIVERT, green otherwise
+        light = np.where(action >= ACT_HOLD, 2, np.where((action == ACT_METER) | diverting, 1, 0))
+        light = np.where(controlled & ~dead, light, 0)
+        light_changes += light != prev_light
+        lit |= light > 0
+        prev_light = light
+        if field:
+            # the light changes at once; the crowd responds f_delay s later and only in part
+            hist_a.append(action.copy())
+            hist_s.append(base_share if share is None else share)
+            full = len(hist_a) == f_delay + 1
+            a_app = hist_a[0] if full else np.zeros(n, int)
+            s_app = hist_s[0] if full else base_share
+            control = 1.0 - f_comply * (1.0 - CTRL[a_app])
+            share = base_share + f_div * (s_app - base_share)
+        else:
+            control = CTRL[action]
+        edge_flow = flow.step(t, control, share)
 
         rho = flow.rho
+        if sens is not None:
+            for node, t_s, mode in extra.get("sensor_kills", []):
+                if t == t_s:
+                    sens.sensor_fault([node], mode)
+            est = sens.update(t, edge_flow, flow.last_arrivals, flow.last_exit_out, rho)
+            e = est - rho
+            err_sq_comp += float(np.mean(e[flow.comps] ** 2))
+            err_max = max(err_max, float(np.abs(e).max()))
+            dense = rho >= 2.0
+            if dense.any():
+                err_max_dense = max(err_max_dense, float(np.abs(e[dense]).max()))
         comp_rho = rho[flow.comps]
         peak_comp = max(peak_comp, float(comp_rho.max()))
         peak_any = max(peak_any, float(rho.max()))
@@ -222,6 +277,23 @@ def run(task):
            "held_node_s": held, "needless_hold_node_s": needless,
            "needless_pct": round(100 * needless / held, 1) if held else 0.0,
            "exited": int(flow.exited)}
+    hours = sc.duration_s / 3600
+    out["light_changes_per_h_mean"] = round(float(light_changes[lit].mean() / hours), 1) if lit.any() else 0.0
+    out["light_changes_per_h_max"] = round(float(light_changes.max() / hours), 1)
+    if sens is not None:
+        out = {"sensing": sens.cfg.name, **out,
+               "est_rmse_comp": round((err_sq_comp / sc.duration_s) ** 0.5, 3),
+               "est_max_abs_err": round(err_max, 2), "est_max_abs_err_dense": round(err_max_dense, 2),
+               "blind_nodes": int(sens.blind.sum()), "counted_nodes": int(sens.counted.sum())}
+        if "kills" in extra or "sensor_kills" in extra:
+            out.update({"label": extra.get("label", ""), "option": extra.get("option", method),
+                        "t_first_alert": extra.get("t_first_alert"),
+                        "killed": " ".join(f"{g.names[nd]}@{t_s}" for nd, t_s in extra.get("kills", [])),
+                        "sensor_killed": " ".join(f"{g.names[nd]}@{t_s}:{md}"
+                                                  for nd, t_s, md in extra.get("sensor_kills", [])),
+                        "nodes_reporting_down": int(ever_down.sum()), "first_act_s": first_act})
+        print(json.dumps(out), flush=True)
+        return out
     if extra:
         out = {"label": extra.get("label", ""), "option": extra.get("option", method),
                "t_first_alert": extra.get("t_first_alert"),

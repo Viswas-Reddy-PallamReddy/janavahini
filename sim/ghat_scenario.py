@@ -157,6 +157,7 @@ def run(sc: Scenario, controller=None, dt=0.05, frames_every_s=None, verbose=Fal
     cap = 4096                    # per-agent arrays indexed by agent id, grown as needed
     last_xy = np.full((cap, 2), np.nan)
     crossed = np.zeros(cap, bool)
+    prev_member = np.zeros((len(zone_names), cap), bool)   # zone membership last second (in/out counts)
     pending = 0.0                 # arrivals that could not enter (road head full) or were diverted
     diverted = 0.0
     command = OPEN
@@ -215,6 +216,7 @@ def run(sc: Scenario, controller=None, dt=0.05, frames_every_s=None, verbose=Fal
             grow = int(ids.max()) * 2 + 1 - cap
             last_xy = np.vstack([last_xy, np.full((grow, 2), np.nan)])
             crossed = np.concatenate([crossed, np.zeros(grow, bool)])
+            prev_member = np.hstack([prev_member, np.zeros((len(zone_names), grow), bool)])
             cap += grow
 
         # --- bathing dwell and exit blockage (behaviour layer) ---
@@ -245,6 +247,16 @@ def run(sc: Scenario, controller=None, dt=0.05, frames_every_s=None, verbose=Fal
         last_xy[ids] = xy
         inside_all = ((xy[None, :, 0] > zone_bounds[:, None, 0]) & (xy[None, :, 0] < zone_bounds[:, None, 2])
                       & (xy[None, :, 1] > zone_bounds[:, None, 1]) & (xy[None, :, 1] < zone_bounds[:, None, 3]))
+        # true crossings per zone this second (for the sensing layer, e3_sensing.py): agents that
+        # entered / left the zone, including agents that left the simulation at the exit
+        member = np.zeros_like(prev_member)
+        member[:, ids] = inside_all
+        zin = (member & ~prev_member).sum(axis=1)
+        zout = (prev_member & ~member).sum(axis=1)
+        prev_member = member
+        for z, name in enumerate(zone_names):
+            row[f"in_{name}"] = int(zin[z])
+            row[f"out_{name}"] = int(zout[z])
         for z, name in enumerate(zone_names):
             inside = inside_all[z]
             rho = inside.sum() / zone_area[z]

@@ -104,6 +104,16 @@ struct __attribute__((packed)) RhoMsg {  // gateway relays simulated sensor read
   float rho;
 };
 
+// Gateway relays simulated raw sensor data for the on-node estimator (include/pk_sense.h):
+// crossings counted since the last message and a density reading (z < 0: none this time)
+struct __attribute__((packed)) CountMsg {
+  uint8_t magic;   // 'N'
+  uint8_t node;
+  float cin;
+  float cout;
+  float z;
+};
+
 // Last-seen search: the desk computes the case's tag IDs for the last 60 min and
 // asks every node for matches in its local sighting buffer (LoRa in deployment).
 struct __attribute__((packed)) SearchMsg {

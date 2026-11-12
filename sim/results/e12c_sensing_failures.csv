@@ -1,0 +1,35 @@
+scenario,failure,firmware,draws,draws_safe_everywhere,s_above_4_mean,s_above_4_max,peak_max,needless_pct_mean,exited_mean
+site-surge,board dies: compartment,deployed,5,5,0.0,0,3.57,0.0,190483
+site-surge,board dies: gate,deployed,5,5,0.0,0,3.57,0.0,192199
+site-surge,board dies: gate+junction,deployed,5,3,620.6,1734,4.85,0.3,193261
+site-surge,board dies: junction,deployed,5,5,0.0,0,3.57,0.0,191825
+site-surge,board dies: random 10%,deployed,5,4,107.6,538,4.2,74.3,190418
+site-surge,board dies: random 20%,deployed,5,4,16.4,82,4.26,82.5,184687
+site-surge,board dies: random 5%,deployed,5,5,0.0,0,3.57,60.5,188686
+site-surge,board dies: road,deployed,5,5,0.0,0,3.97,0.0,191389
+site-surge,camera dies: compartment,naive,5,5,0.0,0,3.57,0.0,192191
+site-surge,camera dies: compartment,flag,5,5,0.0,0,3.95,0.0,190037
+site-surge,camera dies: gate,naive,5,5,0.0,0,3.57,0.0,191556
+site-surge,camera dies: gate,flag,5,5,0.0,0,3.52,0.0,190750
+site-surge,camera dies: junction,naive,5,5,0.0,0,3.55,0.0,192033
+site-surge,camera dies: junction,flag,5,5,0.0,0,3.57,0.0,191521
+site-surge,camera dies: road,naive,5,5,0.0,0,3.55,0.0,192033
+site-surge,camera dies: road,flag,5,5,0.0,0,3.57,0.0,190527
+site-surge,no failure,deployed,5,5,0.0,0,3.55,0.0,192033
+site-blocked,board dies: compartment,deployed,4,4,0.0,0,2.7,50.0,153048
+site-blocked,board dies: gate,deployed,4,4,0.0,0,2.68,0.0,153065
+site-blocked,board dies: gate+junction,deployed,4,4,0.0,0,2.73,0.0,153017
+site-blocked,board dies: junction,deployed,4,4,0.0,0,2.7,50.0,153033
+site-blocked,board dies: random 10%,deployed,4,4,0.0,0,3.0,95.4,151882
+site-blocked,board dies: random 20%,deployed,4,4,0.0,0,3.27,95.8,150714
+site-blocked,board dies: random 5%,deployed,4,4,0.0,0,2.86,94.3,152464
+site-blocked,board dies: road,deployed,4,4,0.0,0,2.85,50.0,152186
+site-blocked,camera dies: compartment,naive,4,4,0.0,0,2.92,50.0,152970
+site-blocked,camera dies: compartment,flag,4,4,0.0,0,2.67,50.0,153067
+site-blocked,camera dies: gate,naive,4,4,0.0,0,2.86,50.0,152954
+site-blocked,camera dies: gate,flag,4,4,0.0,0,2.67,50.0,153067
+site-blocked,camera dies: junction,naive,4,4,0.0,0,2.86,50.0,152954
+site-blocked,camera dies: junction,flag,4,4,0.0,0,2.68,50.0,153001
+site-blocked,camera dies: road,naive,4,4,0.0,0,2.86,50.0,152954
+site-blocked,camera dies: road,flag,4,4,0.0,0,2.84,50.0,152078
+site-blocked,no failure,deployed,5,5,0.0,0,2.86,40.0,150719
