@@ -4,7 +4,7 @@
 > PS-03 (lost-person reunification) is documented on the `ps-03` branch.
 
 **Challenge:** RTIH × RMC *Innovation-Led Solutions for Godavari Pushkaralu 2027*
-**Status as of:** 31 Oct 2026. Submission deadline is 7 Nov 2026; demo/pitch day is 12 Nov 2026.
+**Status as of:** 12 Nov 2026. Submission deadline is 15 Nov 2026 (extended); demo/pitch day is 24 Nov 2026.
 **Scope:** every approach tried, including the ones that failed, every result with its exact numbers, the limitations, and how to reproduce each result. All numbers come from the files in `pushkaralu/sim/results/`.
 
 ---
@@ -25,7 +25,7 @@
 | PS-01 firmware v4 options (light timing, dynamic shares, dead-node release) | ✅ E13 (§2.12): a 120 s dwell on every light drop is **unsafe** (held crowds upstream pass 4 p/m²); amber-only slowing is safe and cuts light changes ~35%; the other two are neutral |
 | ESP32 firmware (3 roles) | ✅ compiles. Runs the **route-graph QS** with node-failure handling. ✅ Firmware code tested in software-in-the-loop (SIL) against the Python model: 100% identical (§4.1).  The final change (held + bypassed = the larger level) was re-checked on 31 Oct under WSL2 `g++`: still 100% identical. ⚠ Not yet flashed or tested on boards |
 | Backend (REST API for the command centre) + dashboard | ✅ end-to-end tests pass (`backend/test_app.py`) |
-| Concept notes, pitch decks, demo videos | ✅ submitted 7 Nov; concept note, architecture and budget updated 11 Nov with E12 |
+| Concept notes, pitch decks, demo videos | ✅ concept note, architecture and budget updated 11–12 Nov (E12–E16; budget costed node by node with sourced prices); demo video re-cut with voiceover 12 Nov |
 | Eligibility of a student team | ✅ the official guidelines admit students who are Indian citizens (checked 11 Nov) |
 | DPDP Rules 2025 Gazette check (child tracking, §9) | ⚠ pending |
 
@@ -280,7 +280,7 @@ With the backhaul cut at 250 s, the centralised method warned the road **0%** of
 
 ### 2.7 PS-01 limitations (state these openly)
 - **Repeated runs are few.** E3 has 5 seeds of one scenario and E8 has 20 scenario draws. NIST TN 1822-style convergence is shown only informally, through the small spread in E3.
-- **Sensing (E1–E11):** inputs are exact simulated densities. Imperfect sensing is tested at site scale in E12 (§2.11); the sensor errors there are modelled, not measured, and the JuPedSim compartment model (E3) has not yet been rerun with sensor errors.
+- **Sensing (E1–E11):** inputs are exact simulated densities. Imperfect sensing is tested at site scale in E12 (§2.11) and in the JuPedSim compartment in E16 (§2.15); the sensor errors are modelled, not measured.
 - **Site scale uses a macroscopic flow model and an invented layout.** The compartment geometry is assumed.
 - **Route shares at junctions are assumed known.** In the field: planned shares, updated from gate in/out counts.
 - **Over-alerting in near-miss draws** (above): 4–6 of 20 draws hold where no place would have passed 3.5 p/m².
@@ -480,7 +480,7 @@ Options in `qs_core.RouteParams` (all off by default; E1–E12 reproduce): **slo
 - **Slow release is unsafe.** In every failing draw the compartments stayed below 2.5 p/m²; the crush was upstream, where a red hold lasting ≥ 120 s piled held pilgrims above 4 p/m² (the "hold where there is buffer" lesson of §2.6, from the other side). Red → amber must stay fast so held crowds can be metered.
 - **Amber-only slow release** keeps the lights calmer with no loss in normal operation, but costs one draw when the approach road's board dies. It is offered as a pilot-tunable option, not the default.
 - **Dynamic shares and dead-node release had no effect** here: the share-weighted sum already tracks diversion closely, and in a surge the nodes behind a dead board are never calm, so the release correctly never fires. After random failures, the needless holds (74–95 %) come from the WATCH floor of "unknown is not safe", which by design is never released to green without the board or an operator.
-- **Correction:** the stored E8 "route-qs fail-safe" row predates later failure-handling fixes; current code gives peak 3.40 (stored 3.49) on seed 0. Conclusions are unchanged; E8 will be regenerated.
+- **Correction:** the stored E8 "route-qs fail-safe" row predated later failure-handling fixes. E8 was regenerated on 11 Nov with the current code: only that row changed (still 20/20 safe in both scenarios), every other row reproduced exactly.
 
 ---
 
@@ -500,6 +500,8 @@ All three roles compile:
 | **Node** | 1 s loop: BLE scan; **route-graph QS step** (`include/pk_qs.h`, shared with the SIL harness) with node-failure handling; ESP-NOW broadcast of its 25-byte `RouteMsg` to the nodes that feed it. 60-min buffer of tag sightings; answers search requests; family-device watch (hashed addresses, 10-min buffer); relays desk commands (LOST on/off) as a BLE command beacon. JSON lines over serial (state, action, threat level, diversion, nodes reported down). Serial `CLEARDOWN <node>` lets an operator release a fail-safe hold after checking a dead node. |
 | **Tag** | Rotating HMAC ID + rotating random MAC. Co-walker learning (scores, imprinting, re-link across rotation). Flags SEPARATED / LOST. Faster beacons when flagged. Carries hashes of two learned family devices when flagged. |
 
+**Density estimator** (`include/pk_sense.h`, port of `sensing.kf_step`): a 2-state Kalman filter per node, fed by line-counter crossings and density readings (serial `SENSE <in> <out> <z>`, or `CountMsg` 'N' relayed by the gateway; real drivers add to the same accumulators). Per-node settings at installation: `PATCH_AREA_M2`, `PATCH_WIDTH_M` (sets the physics-based random walk, §2.15), `HAS_COUNTERS`, `HAS_READING`. A failed density sensor can be flagged (reports at least WATCH). `test_sense_port.py` compiles it with `g++` and feeds it the same inputs as the Python reference: max difference 5.2 × 10⁻⁴ p/m², alert levels identical in 100 % of node-seconds.
+
 **ESP-NOW messages:**
 - route-QS threat `Q` (`RouteMsg`, 25 bytes);
 - sighting `S`;
@@ -507,9 +509,10 @@ All three roles compile:
 - watch `W` / family `M`;
 - command `C`;
 - clear-down `D`;
-- simulated density `R`.
+- simulated density `R`;
+- raw sensor counts for the estimator `N` (`CountMsg`).
 
-**Build** (`pio run`, 31 Oct):
+**Build** (`pio run`, 11 Nov, with the density estimator):
 
 | Role | RAM | Flash |
 |---|---|---|
@@ -618,11 +621,11 @@ Every parallel task carries its own seed from `np.random.SeedSequence(seed).spaw
 ---
 
 ## 6. Risks and open items before submission
-1. **Kalman filter in the firmware:** port `sensing.py`'s estimator to `pk_qs.h` and re-run the SIL equivalence (E9).
+1. ✅ **Kalman filter in the firmware:** ported (`include/pk_sense.h`); matches `sensing.kf_step` within 5.2 × 10⁻⁴ p/m² with 100 % alert-level agreement (`test_sense_port.py`); E9 rerun 12 Nov, still 100 % identical.
 2. **DPDP Rules 2025 Fourth Schedule** wording (Gazette G.S.R. 846(E)).
 3. **Kotilingala model-compartment specs:** re-parameterise the geometry when received.
 4. **Hardware:** flash and range-test the boards (the route-graph QS and failure handling are in the firmware).
-5. **Statistics and sensing at compartment scale:** E3 has 5 seeds of one surge, with perfect sensing; site scale now has 100 draws with realistic sensing (E12d). Rerun E3 in JuPedSim with in/out counts taken from agent trajectories.
+5. ✅ **Sensing at compartment scale:** E16 reran E3 in JuPedSim with in/out counts from agent trajectories (§2.15). It exposed an estimator lag, now fixed. Still only 5 seeds per scenario at compartment scale.
 5a. **Sensor errors are modelled, not measured:** bench-test the VL53L1X in sun and shade, and measure camera density error against manual counts in the pilot.
 6. **LoRa duty:** at SF7 one channel carries only about 2 long-hop boards sending every second (§2.10 M5). Long hops must send on state change or every 10 s (about 29 boards per channel).
 7. **Unverified citations (⚠):** IMO MSC.1/Circ.1533 number; the IIT Madras PRL paper; Legion's owner; Fisheye State Routing and TAG (if cited).
@@ -650,6 +653,9 @@ cd pushkaralu\sim
 ..\.venv\Scripts\python.exe sensing_failures.py --workers 6                        # E12c
 ..\.venv\Scripts\python.exe sensing_experiment.py --workers 6 --tag draws100 --methods route-qs --seeds 0 1 ... 99 --configs truth narrow-2%+cam10   # E12d
 ..\.venv\Scripts\python.exe v4_experiment.py --workers 6                           # E13
+..\.venv\Scripts\python.exe field_experiment.py --workers 6                       # E14 + E15
+..\.venv\Scripts\python.exe e3_sensing.py --workers 4                             # E16, JuPedSim
+..\.venv\Scripts\python.exe test_sense_port.py                                    # firmware estimator vs Python (g++)
 # long runs: start them inside tmux in WSL (they resume from results/*/*.jsonl if stopped)
 cd ..\backend
 ..\.venv\Scripts\python.exe test_app.py
@@ -673,6 +679,9 @@ cd ..\firmware
 | `sim/sensing.py`, `sim/test_sensing.py` | Sensing layer (counters, density readings, 2-state Kalman filter, sensor faults) and its unit tests |
 | `sim/sensing_experiment.py`, `sim/sensing_failures.py` | E12, E12b, E12d; E12c (failures under realistic sensing) |
 | `sim/v4_experiment.py` | E13: firmware v4 options |
+| `sim/field_experiment.py` | E14: police delay and compliance; E15: alert-threshold sensitivity |
+| `sim/e3_sensing.py` | E16: JuPedSim compartment with realistic sensing |
+| `firmware/include/pk_sense.h`, `firmware/sil/sense_check.cpp`, `sim/test_sense_port.py` | Firmware density estimator and its equivalence test against `sensing.kf_step` |
 | `firmware/include/pk_qs.h` | Route-graph QS + failure handling, shared by firmware and SIL |
 | `backend/`, `dashboard/`, `firmware/` | Prototype |
 | `docs/demo_script.md` | Demo |
