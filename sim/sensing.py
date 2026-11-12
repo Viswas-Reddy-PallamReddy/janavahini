@@ -52,23 +52,30 @@ class SensingConfig:
     obs_dropout: float = 0.0
     b_walk_sd: float = 2e-5             # how fast the counter drift may change (p/m^2/s per sqrt(s))
     rw_sd: float = 0.01                 # density change between readings at uncounted nodes (p/m^2/s)
+    # > 0: the uncounted nodes' random walk follows the physics instead of rw_sd: density cannot change
+    # faster than a full-capacity flow through the node's boundary fills its area, so
+    # sd = rw_flow_frac x PEAK_SPECIFIC_FLOW x width / area (p/m^2 per second). E16 showed the fixed
+    # 0.01 lags a small, fast-filling zone by ~2 min (WATCH 105 s late on a 300 m^2 compartment)
+    rw_flow_frac: float = 0.0
 
     def as_dict(self):
         return asdict(self)
 
 
-def kf_step(state, cin, cout, area, counted, due, z, blind, cfg):
+def kf_step(state, cin, cout, area, counted, due, z, blind, cfg, rw=None):
     """One second of the per-node estimator, vectorised over nodes. This is the reference
     for the firmware port (firmware/include/pk_sense.h, checked by test_sense_port.py).
     state = (rho, b, P00, P01, P11); cin/cout: counted crossings this second; due: a density
-    reading z arrived; counted: the node's boundaries are all counted; blind: no sensor at all."""
+    reading z arrived; counted: the node's boundaries are all counted; blind: no sensor at all;
+    rw: per-node random-walk sd for uncounted nodes (None = cfg.rw_sd)."""
     rho, b, P00, P01, P11 = state
     k = counted
     a = area
     # ---- predict
     q_rho = (cfg.count_noise ** 2 * (cin + cout) + 1e-6) / a ** 2
     rho = np.where(k, rho + (cin - cout) / a - b, rho)
-    P00n = np.where(k, P00 - 2 * P01 + P11 + q_rho, P00 + cfg.rw_sd ** 2)
+    rw_sd = cfg.rw_sd if rw is None else rw
+    P00n = np.where(k, P00 - 2 * P01 + P11 + q_rho, P00 + rw_sd ** 2)
     P01n = np.where(k, P01 - P11, 0.0)
     P11n = np.where(k, P11 + cfg.b_walk_sd ** 2, P11)
     P00, P01, P11 = P00n, P01n, P11n
@@ -98,6 +105,8 @@ class Sensing:
         self.n = graph.n
         self.area = np.asarray(graph.area, float)
         width = np.asarray(graph.width, float)
+        from route_graph import PEAK_SPECIFIC_FLOW
+        self.rw = (cfg.rw_flow_frac * PEAK_SPECIFIC_FLOW * width / self.area) if cfg.rw_flow_frac > 0 else None
         kind = np.asarray(graph.kind)
         rng = np.random.default_rng([seed, 12])          # independent of the link-loss stream
         self.rng = rng
@@ -186,7 +195,7 @@ class Sensing:
             z = np.maximum(z, 0.0)
         state = (self.rho, self.b, self.P00, self.P01, self.P11)
         self.rho, self.b, self.P00, self.P01, self.P11 = kf_step(state, cin, cout, self.area, self.counted,
-                                                                 due, z, self.blind, cfg)
+                                                                 due, z, self.blind, cfg, rw=self.rw)
         if self.flagged.any():
             self.rho = np.where(self.flagged, np.maximum(self.rho, self.frozen), self.rho)
         return self.rho
@@ -220,6 +229,11 @@ CONFIGS = {
 _BASE = CONFIGS["narrow-2%+cam10"]
 
 
+def replace_cfg(c, **kw):
+    from dataclasses import replace
+    return replace(c, **kw)
+
+
 def _v(name, **kw):
     from dataclasses import replace
     return name, replace(_BASE, name=name, **kw)
@@ -235,4 +249,7 @@ SWEEP = dict([
     _v("rf30", obs_every_s=30, obs_rel_sd=0.25, obs_bias_sd=0.10, obs_dropout=0.2),
     _v("rf60", obs_every_s=60, obs_rel_sd=0.25, obs_bias_sd=0.10, obs_dropout=0.2),
 ])
-ALL = {**CONFIGS, **SWEEP}
+# E16 fix: the realistic layouts with the physics-based random walk (rw_flow_frac = 1)
+FLOW = {f"{k}+flowrw": replace_cfg(CONFIGS[k], name=f"{k}+flowrw", rw_flow_frac=1.0)
+        for k in ("narrow-2%+cam10", "narrow-2%+rf10", "cam10-only")}
+ALL = {**CONFIGS, **SWEEP, **FLOW}

@@ -41,6 +41,8 @@ CONFIGS = {
     "narrow-2%+rf10": SensingConfig(name="narrow-2%+rf10", counters="narrow", density="all", count_bias_sd=0.02,
                                     obs_every_s=10, obs_rel_sd=0.25, obs_bias_sd=0.10, obs_dropout=0.2),
 }
+CONFIGS.update({f"{k}+flowrw": replace(CONFIGS[k], name=f"{k}+flowrw", rw_flow_frac=1.0)
+                for k in ("narrow-2%+cam10", "narrow-2%+rf10")})
 NARROW = {"X"}     # the 2 m exit corridor; every other zone has a boundary at least 8 m wide
 
 
@@ -52,6 +54,10 @@ class SensedController(qa.Controller):
         self.cfg = cfg
         zones = gs.Layout().build()["zones"]
         self.area = np.array([zones[k].area for k in ZONES])
+        # boundary width ~ the zone's shorter side (roads 8 m, gate 8 m, compartments 15 m, exit corridor 2 m)
+        width = np.array([min(zones[k].bounds[2] - zones[k].bounds[0], zones[k].bounds[3] - zones[k].bounds[1]) for k in ZONES])
+        from route_graph import PEAK_SPECIFIC_FLOW
+        self.rw = cfg.rw_flow_frac * PEAK_SPECIFIC_FLOW * width / self.area if cfg.rw_flow_frac > 0 else None
         Z = len(ZONES)
         r = np.random.default_rng([seed, 16])
         self.r = r
@@ -90,7 +96,7 @@ class SensedController(qa.Controller):
             if due.any():
                 z = np.maximum(true * (1 + self.gamma) * (1 + self.r.normal(0, cfg.obs_rel_sd, len(ZONES)))
                                + self.r.normal(0, cfg.obs_abs_sd, len(ZONES)), 0.0)
-            self.state = kf_step(self.state, cin, cout, self.area, self.counted, due, z, self.blind, cfg)
+            self.state = kf_step(self.state, cin, cout, self.area, self.counted, due, z, self.blind, cfg, rw=self.rw)
             est = self.state[0]
             e = est - true
             self.sq_err += float(np.sum(e ** 2))
@@ -126,12 +132,13 @@ def main():
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--seeds", nargs="+", type=int, default=[1, 2, 3, 4, 5])
     ap.add_argument("--scenarios", nargs="+", default=["surge", "blocked"])
+    ap.add_argument("--configs", nargs="+", default=None, help="default: the four original set-ups")
     args = ap.parse_args()
     LOG.parent.mkdir(parents=True, exist_ok=True)
     rows = [json.loads(x) for x in LOG.read_text().splitlines()] if LOG.exists() else []
     have = {(r["scenario"], r["sensing"], r["seed"]) for r in rows}
     # slowest first: counters-only and RF runs may jam
-    order = ["counters-5%", "narrow-2%+rf10", "narrow-2%+cam10", "truth"]
+    order = args.configs or ["counters-5%", "narrow-2%+rf10", "narrow-2%+cam10", "truth"]
     tasks = [(s, c, k) for c in order for s in args.scenarios for k in args.seeds if (s, c, k) not in have]
     print(f"{len(tasks)} runs to do", flush=True)
     with ProcessPoolExecutor(max_workers=args.workers) as ex, open(LOG, "a") as f:
